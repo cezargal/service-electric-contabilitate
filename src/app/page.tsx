@@ -28,10 +28,9 @@ export default function Home(){
  const payload={id:clientId||null,tip_client:"firma",denumire:clientName,cui,nr_reg_com:reg,adresa,email,telefon:phone,tara:"România"};
  const {data,error}=await supabase.rpc("app_issue_invoice",{p_client:payload,p_linii:lines.map((l,i)=>({...l,pozitie:i+1})),p_data:date,p_scadenta:due||null,p_observatii:notes||null});
  if(error){setError("Factura nu a fost emisă: "+error.message);return}
- const {data:invoice,error:readError}=await supabase.schema("contabilitate").from("facturi").select("*").eq("id",data.id).single();
+ const {data:invoice,error:readError}=await supabase.rpc("app_get_invoice",{p_id:data.id});
  if(readError){setError("Factura a fost emisă, dar nu am putut încărca detaliile: "+readError.message);return}
- const {data:items}=await supabase.schema("contabilitate").from("linii_factura").select("*").eq("factura_id",data.id).order("pozitie");
- setCurrent({...invoice,items:items||[]});await loadData();setTab("preview");setNotice("Factura "+data.serie+" "+data.numar+" a fost emisă și salvată în baza de date.");
+ setCurrent(invoice);await loadData();setTab("preview");setNotice("Factura "+data.serie+" "+data.numar+" a fost emisă și salvată în baza de date.");
  }
  async function openInvoice(id:string){const {data,error}=await supabase.rpc("app_get_invoice",{p_id:id});if(error){setError(error.message);return}setCurrent(data);setTab("preview")}
  if(loading)return <main className="shell">Se încarcă…</main>;
