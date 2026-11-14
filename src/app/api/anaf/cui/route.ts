@@ -1,62 +1,22 @@
 import { NextRequest, NextResponse } from "next/server";
-
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const raw = String(body?.cui ?? "").trim().toUpperCase().replace(/^RO/, "").replace(/\D/g, "");
-    if (!raw || raw.length < 2 || raw.length > 10) {
-      return NextResponse.json({ error: "Introdu un CUI valid." }, { status: 400 });
-    }
-
+    const cui = String(body?.cui ?? "").replace(/^RO/i, "").replace(/\D/g, "");
+    if (!cui) return NextResponse.json({ error: "Introdu un CUI valid." }, { status: 400 });
     const response = await fetch("https://webservicesp.anaf.ro/api/PlatitorTvaRest/v9/tva", {
       method: "POST",
-      headers: { "Content-Type": "application/json", Accept: "application/json" },
-      body: JSON.stringify([{ cui: Number(raw), data: new Date().toISOString().slice(0, 10) }]),
-      cache: "no-store",
-      signal: AbortSignal.timeout(12000),
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify([{ cui: Number(cui), data: new Date().toISOString().slice(0, 10) }]),
+      cache: "no-store"
     });
-
-    if (!response.ok) {
-      return NextResponse.json({ error: "ANAF nu a răspuns momentan. Încearcă din nou." }, { status: 502 });
-    }
-
+    if (!response.ok) return NextResponse.json({ error: "Serviciul ANAF nu răspunde." }, { status: 502 });
     const data = await response.json();
     const company = data?.found?.[0];
-    if (!company) {
-      return NextResponse.json(
-        { error: "CUI-ul nu a fost găsit în registrul ANAF. Verifică numărul și completează manual datele." },
-        { status: 404 },
-      );
-    }
-
-    const general = company.date_generale ?? {};
-    const vat = company.inregistrare_scop_Tva ?? {};
-    const cash = company.inregistrare_RTVAI ?? {};
-    const inactive = company.stare_inactiv ?? {};
-    const address = company.adresa_sediu_social ?? {};
-    const street = [
-      address.sdenumire_Strada,
-      address.snumar_Strada ? "nr. " + address.snumar_Strada : "",
-      address.sdenumire_Localitate,
-      address.sdenumire_Judet,
-    ].filter(Boolean).join(", ");
-
-    return NextResponse.json({
-      cui: String(general.cui ?? raw),
-      denumire: general.denumire ?? "",
-      nrRegCom: general.nrRegCom ?? "",
-      codCAEN: general.cod_CAEN ?? "",
-      adresa: street || general.adresa || "",
-      platitorTva: Boolean(vat.scpTVA),
-      tvaLaIncasare: Boolean(cash.statusTvaIncasare),
-      inactiv: Boolean(inactive.statusInactiv),
-      verificatLa: new Date().toISOString(),
-      sursa: "ANAF",
-    });
+    if (!company) return NextResponse.json({ error: "CUI negăsit în registrul ANAF." }, { status: 404 });
+    const g = company.date_generale ?? {};
+    return NextResponse.json({ cui: String(g.cui ?? cui), denumire: g.denumire ?? "", nrRegCom: g.nrRegCom ?? "", adresa: g.adresa ?? "", codCAEN: g.cod_CAEN ?? "" });
   } catch {
-    return NextResponse.json(
-      { error: "Nu am putut prelua datele. Verifică conexiunea și încearcă din nou." },
-      { status: 500 },
-    );
+    return NextResponse.json({ error: "Nu am putut interoga ANAF." }, { status: 500 });
   }
 }
