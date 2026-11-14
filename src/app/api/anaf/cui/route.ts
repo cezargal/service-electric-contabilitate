@@ -13,9 +13,4 @@ export async function POST(request: NextRequest) {
     const data = await response.json();
     const company = data?.found?.[0];
     if (!company) return NextResponse.json({ error: "CUI-ul nu a fost gÄƒsit Ã®n registrul ANAF. VerificÄƒ numÄƒrul È™i completeazÄƒ manual datele." }, { status: 404 });
-    const general = company.date_generale ?? {};
-    const vat = company.inregistrare_scop_Tva ?? {};
-    const cash = company.inregistrare_RTVAI ?? {};
-    const inactive = company.stare_inactiv ?? {};
-    const address = company.adresa_sediu_social ?? {};
-    const street = [address.sdenumire_Strada, address.snumar_Strada ? "nr. " + address.snumar_Strada : "", address.sdenum¶»§q«^
+    

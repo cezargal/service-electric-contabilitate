@@ -27,5 +27,4 @@ export async function GET() {
   });
   // ANAF's documented flow leaves state empty; retain a local nonce cookie for callback CSRF checks.
   // The callback validates the nonce only if ANAF returns it.
-  return response;
-}
+  return re
