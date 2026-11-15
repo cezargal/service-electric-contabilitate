@@ -19,6 +19,8 @@ export default function Home(){
  const [anafLoading,setAnafLoading]=useState(false),[anafMessage,setAnafMessage]=useState("");
  const [oblioEmail,setOblioEmail]=useState(""),[oblioSecret,setOblioSecret]=useState(""),[oblioCif,setOblioCif]=useState("43594993"),[oblioLoading,setOblioLoading]=useState(false),[oblioResult,setOblioResult]=useState<any>(null);
  const [oblioHistory,setOblioHistory]=useState<any>({documents:[],clients:0,collections:0});
+ const [collectionDate,setCollectionDate]=useState(today()),[collectionAmount,setCollectionAmount]=useState(""),[collectionMethod,setCollectionMethod]=useState("banca"),[collectionReference,setCollectionReference]=useState(""),[collectionNotes,setCollectionNotes]=useState(""),[collectionSaving,setCollectionSaving]=useState(false),[collectionKey,setCollectionKey]=useState("");
+
  useEffect(()=>{setDate(today())},[]);
  useEffect(()=>{supabase.auth.getSession().then(({data})=>{setSession(data.session);setLoading(false)});const {data:{subscription}}=supabase.auth.onAuthStateChange((_e,s)=>setSession(s));return()=>subscription.unsubscribe()},[]);
  useEffect(()=>{if(session)loadData()},[session]);
@@ -42,6 +44,43 @@ export default function Home(){
  setCurrent(invoice);await loadData();setTab("preview");setNotice("Factura "+data.serie+" "+data.numar+" a fost emisă și salvată în baza de date.");
  }
  async function openInvoice(id:string){const {data,error}=await supabase.rpc("app_get_invoice",{p_id:id});if(error){setError(error.message);return}setCurrent(data);setTab("preview")}
+ function startCollection(invoice:any){
+  setCurrent(invoice);
+  setCollectionDate(today());
+  setCollectionAmount(String(Number(invoice.rest_de_plata??invoice.total??0).toFixed(2)));
+  setCollectionMethod("banca");
+  setCollectionReference("");
+  setCollectionNotes("");
+  setCollectionKey(crypto.randomUUID());
+  setError("");
+  setNotice("");
+  setTab("preview");
+ }
+ async function saveCollection(){
+  if(!current?.id||current.isDraftPreview){setError("Încasarea poate fi înregistrată doar pentru o factură emisă.");return}
+  const amount=Number(collectionAmount);
+  const remaining=Number(current.rest_de_plata??current.total??0);
+  if(!collectionDate){setError("Alege data încasării.");return}
+  if(!Number.isFinite(amount)||amount<=0){setError("Introdu o sumă validă, mai mare decât zero.");return}
+  if(amount>remaining+0.001){setError("Suma depășește restul de plată de "+money(remaining)+".");return}
+  setCollectionSaving(true);setError("");setNotice("");
+  try{
+   const {data,error}=await supabase.rpc("app_register_collection",{
+    p_factura_id:current.id,p_data:collectionDate,p_suma:amount,p_metoda:collectionMethod,
+    p_referinta:collectionReference||null,p_observatii:collectionNotes||null,p_idempotency_key:collectionKey||crypto.randomUUID()
+   });
+   if(error)throw error;
+   const {data:updated,error:readError}=await supabase.rpc("app_get_invoice",{p_id:current.id});
+   if(readError)throw readError;
+   setCurrent(updated);await loadData();
+   setCollectionKey(crypto.randomUUID());
+   setCollectionAmount(String(Number(updated.rest_de_plata||0).toFixed(2)));
+   setCollectionReference("");setCollectionNotes("");
+   setNotice(data?.duplicate?"Această încasare fusese deja înregistrată; nu am adăugat-o din nou.":"Încasarea a fost salvată. Rest de plată: "+money(Number(updated.rest_de_plata||0))+".");
+  }catch(e:any){setError(e.message||"Încasarea nu a putut fi salvată.");}
+  finally{setCollectionSaving(false)}
+ }
+
  if(loading)return <main className="shell">Se încarcă…</main>;
  if(!session)return <main className="shell" style={{maxWidth:460,paddingTop:80}}><div className="panel"><img src="/service-electric-logo.svg" alt="SERVICE ELECTRIC by Cezar Gălățanu" style={{width:"100%",maxWidth:340,height:"auto",display:"block",margin:"0 auto 18px"}}/><h1>Facturare</h1><p className="muted">Autentifică-te pentru a emite facturi. Accesul este restricționat la contul autorizat.</p>{error&&<div className="error">{error}</div>}<form onSubmit={signIn}><div className="field"><label>E-mail</label><input type="email" value={loginEmail} onChange={e=>setLoginEmail(e.target.value)} required/></div><div className="field"><label>Parolă</label><input type="password" value={loginPass} onChange={e=>setLoginPass(e.target.value)} required/></div><button className="btn" style={{width:"100%"}}>Intră în aplicație</button></form></div></main>;
  return <main className="shell"><header className="top"><img src="/service-electric-logo.svg" alt="SERVICE ELECTRIC by Cezar Gălățanu" style={{width:340,maxWidth:"75%",height:"auto",display:"block"}}/><div className="no-print"><button className="btn secondary" onClick={signOut} aria-label="Ieșire din cont">Ieșire</button></div></header>
@@ -78,13 +117,31 @@ export default function Home(){
  {tab==="new"&&<div className="panel no-print"><h1>Emitere factură</h1><div className="grid"><div><h3>Client</h3><div className="field"><label>Alege client salvat</label><select value={clientId} onChange={e=>pickClient(e.target.value)}><option value="">Client nou / completează manual</option>{clients.map(c=><option key={c.id} value={c.id}>{c.denumire}</option>)}</select></div><div className="field"><label>Denumire client</label><input value={clientName} onChange={e=>setClientName(e.target.value)} required/></div><div className="field"><label>CUI</label><input value={cui} onChange={e=>{setCui(e.target.value);setAnafMessage("");}} onBlur={()=>{if(cui.trim().length>=2&&!anafLoading)lookupAnaf()}} onKeyDown={e=>{if(e.key==="Enter"){e.preventDefault();lookupAnaf()}}} placeholder="Introdu CUI-ul firmei"/><button type="button" className="btn secondary" disabled={anafLoading||!cui.trim()} onClick={lookupAnaf}>{anafLoading?"Se verifică la ANAF…":"Preia datele din ANAF"}</button>{anafMessage&&<p className="muted">{anafMessage}</p>}</div><div className="field"><label>Nr. Registrul Comerțului</label><input value={reg} onChange={e=>setReg(e.target.value)}/></div><div className="field"><label>Adresă</label><input value={address} onChange={e=>setAddress(e.target.value)}/></div><div className="grid"><div className="field"><label>E-mail</label><input value={email} onChange={e=>setEmail(e.target.value)}/></div><div className="field"><label>Telefon</label><input value={phone} onChange={e=>setPhone(e.target.value)}/></div></div></div><div><h3>Detalii factură</h3><div className="field"><label>Data emiterii</label><input type="date" value={date} onChange={e=>setDate(e.target.value)}/></div><div className="field"><label>Data scadenței</label><input type="date" value={due} onChange={e=>setDue(e.target.value)}/></div><div className="field"><label>Observații</label><textarea value={notes} onChange={e=>setNotes(e.target.value)} rows={3}/></div><p className="muted">Seria SE și numărul se alocă automat la emitere.</p></div></div>
  <h3>Produse și servicii</h3><div style={{display:"grid",gap:10}}>{lines.map((l,i)=><div className="line" key={i}><div className="field wide"><label>Descriere</label><input value={l.descriere} onChange={e=>setLines(old=>old.map((x,j)=>j===i?{...x,descriere:e.target.value}:x))}/></div><div className="field"><label>Cant.</label><input type="number" min="0.001" step="0.001" value={l.cantitate} onChange={e=>setLines(old=>old.map((x,j)=>j===i?{...x,cantitate:Number(e.target.value)}:x))}/></div><div className="field"><label>Preț unitar</label><input type="number" min="0" step="0.01" value={l.pret_unitar} onChange={e=>setLines(old=>old.map((x,j)=>j===i?{...x,pret_unitar:Number(e.target.value)}:x))}/></div><div className="field"><label>U.M.</label><input value={l.unitate} onChange={e=>setLines(old=>old.map((x,j)=>j===i?{...x,unitate:e.target.value}:x))}/></div><button className="btn danger" style={{marginBottom:12}} onClick={()=>setLines(old=>old.filter((_,j)=>j!==i))}>×</button></div>)}</div><button className="btn secondary" onClick={()=>setLines(old=>[...old,{descriere:"",cantitate:1,unitate:"buc",pret_unitar:0,cota_tva:0}])}>+ Adaugă poziție</button>
  <div style={{display:"flex",justifyContent:"flex-end",marginTop:22}}><div style={{minWidth:260}}><p>Valoare servicii și produse: <b>{money(totals.net)}</b></p><div className="total">Total de plată: {money(totals.total)}</div><button className="btn secondary" style={{width:"100%",marginTop:14}} onClick={previewDraft}>Previzualizează factura</button><button className="btn" style={{width:"100%",marginTop:8}} onClick={issueInvoice}>Emite și salvează factura</button></div></div></div>}
- {tab==="invoices"&&<div className="panel no-print"><div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}><h1>Facturi emise</h1><button className="btn" onClick={()=>setTab("new")}>+ Factură nouă</button></div><div className="field"><label>Caută client / serie / număr</label><input value={search} onChange={e=>setSearch(e.target.value)}/></div><div className="scroll"><table className="table"><thead><tr><th>Factura</th><th>Data</th><th>Client</th><th>Total</th><th>Status</th><th></th></tr></thead><tbody>{invoices.filter(f=>(f.client_denumire+" "+f.serie+" "+f.numar).toLowerCase().includes(search.toLowerCase())).map(f=><tr key={f.id}><td>{f.serie} {f.numar}</td><td>{f.data_document}</td><td>{f.client_denumire}</td><td>{money(Number(f.total))}</td><td>{f.status}</td><td><button className="btn secondary" onClick={()=>openInvoice(f.id)}>Deschide</button></td></tr>)}</tbody></table>{!invoices.length&&<p className="muted">Nu există facturi emise.</p>}</div></div>}
+ {tab==="invoices"&&<div className="panel no-print"><div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}><h1>Facturi emise</h1><button className="btn" onClick={()=>setTab("new")}>+ Factură nouă</button></div><div className="field"><label>Caută client / serie / număr</label><input value={search} onChange={e=>setSearch(e.target.value)}/></div><div className="scroll"><table className="table"><thead><tr><th>Factura</th><th>Data</th><th>Client</th><th>Total</th><th>Status factură</th><th>Încasat</th><th>Rest</th><th>Status încasare</th><th></th></tr></thead><tbody>{invoices.filter(f=>(f.client_denumire+" "+f.serie+" "+f.numar).toLowerCase().includes(search.toLowerCase())).map(f=><tr key={f.id}><td>{f.serie} {f.numar}</td><td>{f.data_document}</td><td>{f.client_denumire}</td><td>{money(Number(f.total))}</td><td>{f.status}</td><td>{money(Number(f.total_incasat||0))}</td><td>{money(Number(f.rest_de_plata??f.total??0))}</td><td>{f.status_incasare==="achitata"?"Achitată":f.status_incasare==="partial"?"Parțial":"Neîncasată"}</td><td style={{display:"flex",gap:6}}><button className="btn secondary" onClick={()=>openInvoice(f.id)}>Deschide</button>{Number(f.rest_de_plata??f.total)>0&&<button className="btn" onClick={()=>startCollection(f)}>Încasează</button>}</td></tr>)}</tbody></table>{!invoices.length&&<p className="muted">Nu există facturi emise.</p>}</div></div>}
  {tab==="clients"&&<div className="grid no-print"><div className="panel"><h2>Adaugă client</h2><form onSubmit={saveClient}>{([["denumire","Denumire"],["cui","CUI / CNP"],["adresa","Adresă"],["email","E-mail"],["telefon","Telefon"]] as const).map(([k,l])=><div className="field" key={k}><label>{l}</label><input value={(newClient as any)[k]} onChange={e=>setNewClient(o=>({...o,[k]:e.target.value}))} required={k==="denumire"}/></div>)}<button className="btn">Salvează client</button></form></div><div className="panel"><h2>Clienți salvați</h2>{clients.map(c=><div key={c.id} style={{padding:"10px 0",borderBottom:"1px solid #eee"}}><b>{c.denumire}</b><div className="muted">{c.cui||"Fără CUI"} · {c.adresa||""}</div></div>)}{!clients.length&&<p className="muted">Nu există clienți salvați.</p>}</div></div>}
  {tab==="preview"&&current&&<div className="panel">
   <div className="no-print" style={{display:"flex",justifyContent:"space-between",marginBottom:20}}>
    <button className="btn secondary" onClick={()=>setTab(current.isDraftPreview?"new":"invoices")}>{current.isDraftPreview?"← Înapoi la editare":"← Înapoi la facturi"}</button>
    <div style={{display:"flex",gap:8}}>{current.isDraftPreview&&<button className="btn" onClick={issueInvoice}>Emite factura</button>}<button className="btn secondary" onClick={()=>window.print()}>Tipărește / Salvează PDF</button></div>
   </div>
+  {!current.isDraftPreview&&<div className="no-print panel" style={{marginBottom:18,border:"1px solid #cdd9e8"}}>
+   <div style={{display:"flex",justifyContent:"space-between",gap:16,flexWrap:"wrap",alignItems:"center"}}>
+    <div><h2 style={{margin:"0 0 6px"}}>Încasare factură</h2><div className="muted">Total: {money(Number(current.total||0))} · Încasat: {money(Number(current.total_incasat||0))} · Rest: <b>{money(Number(current.rest_de_plata??current.total??0))}</b></div></div>
+    <strong style={{color:Number(current.rest_de_plata??current.total??0)<=0?"#18723b":"#a15a00"}}>{current.status_incasare==="achitata"?"ACHITATĂ":current.status_incasare==="partial"?"PLATĂ PARȚIALĂ":"NEÎNCASATĂ"}</strong>
+   </div>
+   {Number(current.rest_de_plata??current.total??0)>0&&<div style={{marginTop:16}}>
+    <div className="grid">
+     <div className="field"><label>Data încasării</label><input type="date" value={collectionDate} onChange={e=>setCollectionDate(e.target.value)}/></div>
+     <div className="field"><label>Sumă încasată (RON)</label><input type="number" min="0.01" max={Number(current.rest_de_plata??current.total??0)} step="0.01" value={collectionAmount} onChange={e=>setCollectionAmount(e.target.value)}/></div>
+     <div className="field"><label>Modalitate</label><select value={collectionMethod} onChange={e=>setCollectionMethod(e.target.value)}><option value="numerar">Numerar</option><option value="card">Card / POS</option><option value="banca">Transfer bancar</option></select></div>
+     <div className="field"><label>Referință / număr document (opțional)</label><input value={collectionReference} onChange={e=>setCollectionReference(e.target.value)} placeholder="Nr. extras, OP sau bon POS"/></div>
+    </div>
+    <div className="field"><label>Observații (opțional)</label><input value={collectionNotes} onChange={e=>setCollectionNotes(e.target.value)}/></div>
+    <button className="btn" disabled={collectionSaving} onClick={saveCollection}>{collectionSaving?"Se salvează…":"Înregistrează încasarea"}</button>
+    <p className="muted" style={{marginTop:8}}>Încasările parțiale se salvează separat, la data aleasă. Cardul/POS și transferul bancar se evidențiază pe fluxul bancar; numerarul rămâne distinct.</p>
+   </div>}
+   {(current.incasari||[]).length>0&&<div style={{marginTop:18}}><h3>Istoric încasări</h3><div className="scroll"><table className="table"><thead><tr><th>Data</th><th>Modalitate</th><th>Referință</th><th>Sumă</th></tr></thead><tbody>{current.incasari.map((p:any)=><tr key={p.id}><td>{p.data_incasarii}</td><td>{p.metoda==="numerar"?"Numerar":p.metoda==="card"?"Card / POS":"Transfer bancar"}</td><td>{p.referinta||"—"}</td><td>{money(Number(p.suma))}</td></tr>)}</tbody></table></div></div>}
+  </div>}
   <div className="invoice-print" style={{maxWidth:850,margin:"auto",padding:28,color:"#111",fontFamily:"Arial,Helvetica,sans-serif",fontSize:13}}>
    <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",gap:24,marginBottom:26}}>
     <div>
