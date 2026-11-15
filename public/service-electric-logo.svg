@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 360" role="img" aria-labelledby="title desc">
+<title id="title">SERVICE ELECTRIC by Cezar Gălățanu</title><desc id="desc">Scut albastru cu o casă și fulger auriu, alături de numele SERVICE ELECTRIC.</desc>
+<defs>
+ <linearGradient id="shield" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#0c2b68"/><stop offset=".55" stop-color="#071a3d"/><stop offset="1" stop-color="#123f91"/></linearGradient>
+ <linearGradient id="edge" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#70d7ff"/><stop offset=".5" stop-color="#0875e8"/><stop offset="1" stop-color="#073b91"/></linearGradient>
+ <linearGradient id="gold" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#fff2a0"/><stop offset=".4" stop-color="#ffc629"/><stop offset="1" stop-color="#e88900"/></linearGradient>
+</defs>
+<g transform="translate(12 8)">
+ <path d="M172 8 318 62v112c0 90-58 143-146 178C84 317 26 264 26 174V62L172 8Z" fill="url(#shield)" stroke="url(#edge)" stroke-width="13"/>
+ <path d="M57 137 172 48l114 89h-43l-71-55-72 55Z" fill="#fff"/>
+ <path d="M126 145h25v25h-25zm39 0h25v25h-25zm-39 38h25v25h-25zm39 0h25v25h-25z" fill="#fff"/>
+ <path d="m202 88-96 133h67l-24 105 116-165h-70l32-73-25 0Z" fill="url(#gold)" stroke="#e88900" stroke-width="4" stroke-linejoin="round"/>
+</g>
+<g font-family="Arial,Helvetica,sans-serif" font-weight="900" font-style="italic">
+ <text x="365" y="142" font-size="112" fill="#0b1e43" letter-spacing="-3">SERVICE</text>
+ <text x="365" y="253" font-size="112" fill="#0754cf" letter-spacing="-4">ELECTRIC<tspan font-size="26" baseline-shift="super">®</tspan></text>
+</g>
+<path d="M445 292h115" stroke="#0754cf" stroke-width="5" stroke-linecap="round"/>
+<text x="580" y="310" font-family="Arial,Helvetica,sans-serif" font-size="42" font-weight="700" font-style="italic" fill="#0b1e43">by Cezar Gălățanu</text>
+<path d="M1005 292h125" stroke="#0754cf" stroke-width="5" stroke-linecap="round"/>
+</svg>
