@@ -11,7 +11,7 @@ export default function Home(){
  const [session,setSession]=useState<any>(null),[loading,setLoading]=useState(true),[tab,setTab]=useState("new"),[error,setError]=useState(""),[notice,setNotice]=useState("");
  const [clients,setClients]=useState<Client[]>([]),[invoices,setInvoices]=useState<Invoice[]>([]);
  const [clientId,setClientId]=useState(""),[clientName,setClientName]=useState(""),[cui,setCui]=useState(""),[reg,setReg]=useState(""),[address,setAddress]=useState(""),[email,setEmail]=useState(""),[phone,setPhone]=useState("");
- const [date,setDate]=useState(today()),[due,setDue]=useState(""),[notes,setNotes]=useState("");
+ const [date,setDate]=useState(""),[due,setDue]=useState(""),[notes,setNotes]=useState("");
  const [lines,setLines]=useState<Line[]>([{descriere:"Servicii",cantitate:1,unitate:"buc",pret_unitar:0,cota_tva:21}]);
  const [current,setCurrent]=useState<any>(null),[loginEmail,setLoginEmail]=useState(""),[loginPass,setLoginPass]=useState("");
  const [newClient,setNewClient]=useState({denumire:"",cui:"",adresa:"",email:"",telefon:"",tip_client:"firma"});
