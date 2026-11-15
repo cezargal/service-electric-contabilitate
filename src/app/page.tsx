@@ -43,8 +43,8 @@ export default function Home(){
  }
  async function openInvoice(id:string){const {data,error}=await supabase.rpc("app_get_invoice",{p_id:id});if(error){setError(error.message);return}setCurrent(data);setTab("preview")}
  if(loading)return <main className="shell">Se încarcă…</main>;
- if(!session)return <main className="shell" style={{maxWidth:460,paddingTop:80}}><div className="panel"><div className="brand">SERVICE ELECTRIC</div><h1>Facturare</h1><p className="muted">Autentifică-te pentru a emite facturi. Accesul este restricționat la contul autorizat.</p>{error&&<div className="error">{error}</div>}<form onSubmit={signIn}><div className="field"><label>E-mail</label><input type="email" value={loginEmail} onChange={e=>setLoginEmail(e.target.value)} required/></div><div className="field"><label>Parolă</label><input type="password" value={loginPass} onChange={e=>setLoginPass(e.target.value)} required/></div><button className="btn" style={{width:"100%"}}>Intră în aplicație</button></form></div></main>;
- return <main className="shell"><header className="top"><div className="se-mark" aria-label="SERVICE ELECTRIC"><svg viewBox="0 0 76 76" role="img" aria-hidden="true"><defs><linearGradient id="seGrad" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stopColor="#28b8ff"/><stop offset="1" stopColor="#174b9b"/></linearGradient><filter id="seGlow" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="2.5" result="blur"/><feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs><path d="M38 4 66 15v21c0 17-11 28-28 36C21 64 10 53 10 36V15L38 4Z" fill="#0c1d35" stroke="url(#seGrad)" strokeWidth="3"/><path d="M43 13 24 41h13l-4 21 20-30H40l3-19Z" fill="#f5fbff" filter="url(#seGlow)"/><path d="M17 17 38 9l21 8" fill="none" stroke="#6dd4ff" strokeWidth="1.5" opacity=".8"/></svg><span>SE</span></div><div className="no-print"><button className="btn secondary" onClick={signOut} aria-label="Ieșire din cont">Ieșire</button></div></header>
+ if(!session)return <main className="shell" style={{maxWidth:460,paddingTop:80}}><div className="panel"><img src="/service-electric-logo.svg" alt="SERVICE ELECTRIC by Cezar Gălățanu" style={{width:"100%",maxWidth:340,height:"auto",display:"block",margin:"0 auto 18px"}}/><h1>Facturare</h1><p className="muted">Autentifică-te pentru a emite facturi. Accesul este restricționat la contul autorizat.</p>{error&&<div className="error">{error}</div>}<form onSubmit={signIn}><div className="field"><label>E-mail</label><input type="email" value={loginEmail} onChange={e=>setLoginEmail(e.target.value)} required/></div><div className="field"><label>Parolă</label><input type="password" value={loginPass} onChange={e=>setLoginPass(e.target.value)} required/></div><button className="btn" style={{width:"100%"}}>Intră în aplicație</button></form></div></main>;
+ return <main className="shell"><header className="top"><img src="/service-electric-logo.svg" alt="SERVICE ELECTRIC by Cezar Gălățanu" style={{width:340,maxWidth:"75%",height:"auto",display:"block"}}/><div className="no-print"><button className="btn secondary" onClick={signOut} aria-label="Ieșire din cont">Ieșire</button></div></header>
  {error&&<div className="error no-print">{error}</div>}{notice&&<div className="success no-print">{notice}</div>}
  <nav className="tabs no-print">{[["new","Factură nouă"],["invoices","Facturi emise"],["clients","Clienți"],["import","Import Oblio"]].map(([v,l])=><button key={v} className={"tab "+(tab===v?"active":"")} onClick={()=>{setTab(v);setError("");setNotice("")}}>{l}</button>)}</nav>
  {tab==="import"&&<>
@@ -93,14 +93,7 @@ export default function Home(){
      <div style={{fontWeight:700,marginTop:4}}>Data: {current.data_document}</div>
      {current.data_scadenta&&<div style={{marginTop:4}}>Data scadență: {current.data_scadenta}</div>}
     </div>
-    <div style={{width:82,height:82,flexShrink:0}}>
-     <svg viewBox="0 0 76 76" role="img" aria-label="Sigla SERVICE ELECTRIC">
-      <defs><linearGradient id="invoiceSeGrad" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stopColor="#28b8ff"/><stop offset="1" stopColor="#174b9b"/></linearGradient></defs>
-      <path d="M38 4 66 15v21c0 17-11 28-28 36C21 64 10 53 10 36V15L38 4Z" fill="#0c1d35" stroke="url(#invoiceSeGrad)" strokeWidth="3"/>
-      <path d="M43 13 24 41h13l-4 21 20-30H40l3-19Z" fill="#f5fbff"/>
-      <path d="M17 17 38 9l21 8" fill="none" stroke="#6dd4ff" strokeWidth="1.5" opacity=".8"/>
-     </svg>
-    </div>
+    <img src="/service-electric-logo.svg" alt="SERVICE ELECTRIC by Cezar Gălățanu" style={{width:290,maxWidth:"100%",height:"auto",display:"block"}}/>
    </div>
    <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:18,marginBottom:24}}>
     <section style={{minWidth:0}}>
