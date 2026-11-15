@@ -16,6 +16,7 @@ export default function Home(){
  const [current,setCurrent]=useState<any>(null),[loginEmail,setLoginEmail]=useState(""),[loginPass,setLoginPass]=useState("");
  const [newClient,setNewClient]=useState({denumire:"",cui:"",adresa:"",email:"",telefon:"",tip_client:"firma"});
  const [search,setSearch]=useState("");
+ useEffect(()=>{setDate(today())},[]);
  useEffect(()=>{supabase.auth.getSession().then(({data})=>{setSession(data.session);setLoading(false)});const {data:{subscription}}=supabase.auth.onAuthStateChange((_e,s)=>setSession(s));return()=>subscription.unsubscribe()},[]);
  useEffect(()=>{if(session)loadData()},[session]);
  async function loadData(){setError("");const {data,error}=await supabase.rpc("app_bootstrap");if(error){setError(error.message);return}setClients(data?.clients||[]);setInvoices(data?.invoices||[])}
