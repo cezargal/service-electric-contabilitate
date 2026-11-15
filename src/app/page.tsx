@@ -21,7 +21,7 @@ export default function Home(){
  const [oblioHistory,setOblioHistory]=useState<any>({documents:[],clients:0,collections:0});
  const [collectionDate,setCollectionDate]=useState(today()),[collectionAmount,setCollectionAmount]=useState(""),[collectionMethod,setCollectionMethod]=useState("banca"),[collectionReference,setCollectionReference]=useState(""),[collectionNotes,setCollectionNotes]=useState(""),[collectionSaving,setCollectionSaving]=useState(false),[collectionKey,setCollectionKey]=useState("");
 
- useEffect(()=>{setDate(today())},[]);
+ useEffect(()=>{setDate(today());setCollectionDate(today())},[]);
  useEffect(()=>{supabase.auth.getSession().then(({data})=>{setSession(data.session);setLoading(false)});const {data:{subscription}}=supabase.auth.onAuthStateChange((_e,s)=>setSession(s));return()=>subscription.unsubscribe()},[]);
  useEffect(()=>{if(session)loadData()},[session]);
  useEffect(()=>{if(session&&tab==="import")loadOblioHistory()},[session,tab]);
