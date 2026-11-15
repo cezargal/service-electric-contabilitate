@@ -4,7 +4,7 @@ import { supabase } from "@/lib/supabase";
 
 type Client={id:string;tip_client:string;denumire:string;cui?:string;nr_reg_com?:string;adresa?:string;email?:string;telefon?:string};
 type Line={descriere:string;cantitate:number;unitate:string;pret_unitar:number;cota_tva:number};
-type Invoice={id:string;serie:string;numar:number;data_document:string;client_denumire:string;client_cui?:string;client_adresa?:string;total:number;status:string};
+type Invoice={id:string;serie:string;numar:number;data_document:string;client_denumire:string;client_cui?:string;client_adresa?:string;total:number;status:string;total_incasat?:number;rest_de_plata?:number;status_incasare?:"achitata"|"partial"|"neachitata"};
 const money=(n:number)=>new Intl.NumberFormat("ro-RO",{style:"currency",currency:"RON"}).format(n||0);
 const today=()=>new Date().toISOString().slice(0,10);
 export default function Home(){
