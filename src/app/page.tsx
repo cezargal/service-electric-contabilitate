@@ -25,7 +25,7 @@ export default function Home(){
  function pickClient(id:string){setClientId(id);const c=clients.find(x=>x.id===id);if(c){setClientName(c.denumire);setCui(c.cui||"");setReg(c.nr_reg_com||"");setAddress(c.adresa||"");setEmail(c.email||"");setPhone(c.telefon||"")}else{setClientName("");setCui("");setReg("");setAddress("");setEmail("");setPhone("")}}
  async function saveClient(e:any){e.preventDefault();setError("");const {data,error}=await supabase.rpc("app_save_client",{p_client:newClient});if(error){setError(error.message);return}await loadData();pickClient(data.id);setNotice("Client salvat.");setTab("new")}
  async function issueInvoice(){setError("");setNotice("");if(!clientName.trim()){setError("Completează denumirea clientului.");return}if(lines.some(l=>!l.descriere.trim()||Number(l.cantitate)<=0)){setError("Verifică pozițiile facturii.");return}
- const payload={id:clientId||null,tip_client:"firma",denumire:clientName,cui,nr_reg_com:reg,adresa,email,telefon:phone,tara:"România"};
+ const payload={id:clientId||null,tip_client:"firma",denumire:clientName,cui,nr_reg_com:reg,adresa:address,email,telefon:phone,tara:"România"};
  const {data,error}=await supabase.rpc("app_issue_invoice",{p_client:payload,p_linii:lines.map((l,i)=>({...l,pozitie:i+1})),p_data:date,p_scadenta:due||null,p_observatii:notes||null});
  if(error){setError("Factura nu a fost emisă: "+error.message);return}
  const {data:invoice,error:readError}=await supabase.rpc("app_get_invoice",{p_id:data.id});
