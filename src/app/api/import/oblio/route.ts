@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 
-export const runtime = "nodejs";
 const api = "https://www.oblio.eu/api";
 
 async function oblioGet(path: string, token: string) {
