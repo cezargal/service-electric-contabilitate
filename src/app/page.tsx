@@ -80,6 +80,92 @@ export default function Home(){
  <div style={{display:"flex",justifyContent:"flex-end",marginTop:22}}><div style={{minWidth:260}}><p>Valoare servicii și produse: <b>{money(totals.net)}</b></p><div className="total">Total de plată: {money(totals.total)}</div><button className="btn secondary" style={{width:"100%",marginTop:14}} onClick={previewDraft}>Previzualizează factura</button><button className="btn" style={{width:"100%",marginTop:8}} onClick={issueInvoice}>Emite și salvează factura</button></div></div></div>}
  {tab==="invoices"&&<div className="panel no-print"><div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}><h1>Facturi emise</h1><button className="btn" onClick={()=>setTab("new")}>+ Factură nouă</button></div><div className="field"><label>Caută client / serie / număr</label><input value={search} onChange={e=>setSearch(e.target.value)}/></div><div className="scroll"><table className="table"><thead><tr><th>Factura</th><th>Data</th><th>Client</th><th>Total</th><th>Status</th><th></th></tr></thead><tbody>{invoices.filter(f=>(f.client_denumire+" "+f.serie+" "+f.numar).toLowerCase().includes(search.toLowerCase())).map(f=><tr key={f.id}><td>{f.serie} {f.numar}</td><td>{f.data_document}</td><td>{f.client_denumire}</td><td>{money(Number(f.total))}</td><td>{f.status}</td><td><button className="btn secondary" onClick={()=>openInvoice(f.id)}>Deschide</button></td></tr>)}</tbody></table>{!invoices.length&&<p className="muted">Nu există facturi emise.</p>}</div></div>}
  {tab==="clients"&&<div className="grid no-print"><div className="panel"><h2>Adaugă client</h2><form onSubmit={saveClient}>{([["denumire","Denumire"],["cui","CUI / CNP"],["adresa","Adresă"],["email","E-mail"],["telefon","Telefon"]] as const).map(([k,l])=><div className="field" key={k}><label>{l}</label><input value={(newClient as any)[k]} onChange={e=>setNewClient(o=>({...o,[k]:e.target.value}))} required={k==="denumire"}/></div>)}<button className="btn">Salvează client</button></form></div><div className="panel"><h2>Clienți salvați</h2>{clients.map(c=><div key={c.id} style={{padding:"10px 0",borderBottom:"1px solid #eee"}}><b>{c.denumire}</b><div className="muted">{c.cui||"Fără CUI"} · {c.adresa||""}</div></div>)}{!clients.length&&<p className="muted">Nu există clienți salvați.</p>}</div></div>}
- {tab==="preview"&&current&&<div className="panel"><div className="no-print" style={{display:"flex",justifyContent:"space-between",marginBottom:20}}><button className="btn secondary" onClick={()=>setTab(current.isDraftPreview?"new":"invoices")}>{current.isDraftPreview?"← Înapoi la editare":"← Înapoi la facturi"}</button><div style={{display:"flex",gap:8}}>{current.isDraftPreview&&<button className="btn" onClick={issueInvoice}>Emite factura</button>}<button className="btn secondary" onClick={()=>window.print()}>Tipărește / Salvează PDF</button></div></div><div className="invoice-print" style={{maxWidth:850,margin:"auto",padding:28,color:"#111"}}><div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",gap:24}}><div style={{width:76,height:76,flexShrink:0}}><svg viewBox="0 0 76 76" role="img" aria-label="Sigla SERVICE ELECTRIC"><defs><linearGradient id="invoiceSeGrad" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stopColor="#28b8ff"/><stop offset="1" stopColor="#174b9b"/></linearGradient></defs><path d="M38 4 66 15v21c0 17-11 28-28 36C21 64 10 53 10 36V15L38 4Z" fill="#0c1d35" stroke="url(#invoiceSeGrad)" strokeWidth="3"/><path d="M43 13 24 41h13l-4 21 20-30H40l3-19Z" fill="#f5fbff"/><path d="M17 17 38 9l21 8" fill="none" stroke="#6dd4ff" strokeWidth="1.5" opacity=".8"/></svg></div><div style={{textAlign:"right"}}><div style={{fontSize:30,fontWeight:800}}>FACTURĂ</div><h2 style={{margin:"8px 0"}}>{current.serie} {current.numar}</h2><p>Data emiterii: {current.data_document}</p><p>Scadență: {current.data_scadenta||"—"}</p></div></div><hr style={{margin:"24px 0"}}/><div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:24}}><div><h3>FURNIZOR</h3><b>GĂLĂȚANU CEZAR ÎNTREPRINDERE INDIVIDUALĂ</b><p>CUI: 43594993</p><p>Nr. Reg. Comerțului: F2021000025079</p><p>Adresă: Mandrești (Vlădeni), jud. Botoșani</p><p>IBAN: RO56BTRLRONCRT0587888101</p><p>Banca: Banca Transilvania</p><p>SWIFT: BTRLRO22</p><p>Telefon: 0733928730</p><p>E-mail: office@service-electric.ro</p><p>Website: service-electric.ro</p></div><div><h3>CLIENT</h3><b>{current.client_denumire}</b><p>CUI / CNP: {current.client_cui||"—"}</p><p>Nr. Reg. Com.: {current.client_nr_reg_com||"—"}</p><p>{current.client_adresa||""}</p><p>{current.client_email||""}</p></div></div><table className="table" style={{marginTop:24}}><thead><tr><th>Nr.</th><th>Denumire produs / serviciu</th><th>U.M.</th><th>Cant.</th><th>Preț unitar (RON)</th><th>Valoare (RON)</th></tr></thead><tbody>{(current.items||[]).map((x:any,i:number)=><tr key={x.id}><td>{i+1}</td><td>{x.descriere}</td><td>{x.unitate}</td><td>{x.cantitate}</td><td>{money(Number(x.pret_unitar))}</td><td>{money(Number(x.valoare_totala))}</td></tr>)}</tbody></table><div style={{textAlign:"right",marginTop:24}}><h2>Total de plată: {money(Number(current.total))}</h2></div><p style={{marginTop:48,fontSize:12}}>Factura este emisă de Gălățanu Cezar Întreprindere Individuală.</p></div></div>}
+ {tab==="preview"&&current&&<div className="panel">
+  <div className="no-print" style={{display:"flex",justifyContent:"space-between",marginBottom:20}}>
+   <button className="btn secondary" onClick={()=>setTab(current.isDraftPreview?"new":"invoices")}>{current.isDraftPreview?"← Înapoi la editare":"← Înapoi la facturi"}</button>
+   <div style={{display:"flex",gap:8}}>{current.isDraftPreview&&<button className="btn" onClick={issueInvoice}>Emite factura</button>}<button className="btn secondary" onClick={()=>window.print()}>Tipărește / Salvează PDF</button></div>
+  </div>
+  <div className="invoice-print" style={{maxWidth:850,margin:"auto",padding:28,color:"#111",fontFamily:"Arial,Helvetica,sans-serif",fontSize:13}}>
+   <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",gap:24,marginBottom:26}}>
+    <div>
+     <div style={{fontSize:27,fontWeight:800,letterSpacing:.4}}>FACTURĂ</div>
+     <div style={{fontWeight:700,marginTop:5}}>Serie/Număr: {current.serie} / {current.numar}</div>
+     <div style={{fontWeight:700,marginTop:4}}>Data: {current.data_document}</div>
+     {current.data_scadenta&&<div style={{marginTop:4}}>Data scadență: {current.data_scadenta}</div>}
+    </div>
+    <div style={{width:82,height:82,flexShrink:0}}>
+     <svg viewBox="0 0 76 76" role="img" aria-label="Sigla SERVICE ELECTRIC">
+      <defs><linearGradient id="invoiceSeGrad" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stopColor="#28b8ff"/><stop offset="1" stopColor="#174b9b"/></linearGradient></defs>
+      <path d="M38 4 66 15v21c0 17-11 28-28 36C21 64 10 53 10 36V15L38 4Z" fill="#0c1d35" stroke="url(#invoiceSeGrad)" strokeWidth="3"/>
+      <path d="M43 13 24 41h13l-4 21 20-30H40l3-19Z" fill="#f5fbff"/>
+      <path d="M17 17 38 9l21 8" fill="none" stroke="#6dd4ff" strokeWidth="1.5" opacity=".8"/>
+     </svg>
+    </div>
+   </div>
+   <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:18,marginBottom:24}}>
+    <section style={{minWidth:0}}>
+     <div style={{border:"1px solid #222",padding:"7px 9px",fontWeight:800,marginBottom:9}}>FURNIZOR</div>
+     <div style={{padding:"0 2px",lineHeight:1.55}}>
+      <b>GĂLĂȚANU CEZAR ÎNTREPRINDERE INDIVIDUALĂ</b>
+      <div>Adresă: Mandrești (Vlădeni), jud. Botoșani</div>
+      <div>CUI: 43594993</div>
+      <div>Reg. comerțului: F2021000025079</div>
+      <div>Banca: Banca Transilvania</div>
+      <div>Cont bancar: RO56BTRLRONCRT0587888101</div>
+      <div>Telefon: 0733928730</div>
+      <div>E-mail: office@service-electric.ro</div>
+     </div>
+    </section>
+    <section style={{minWidth:0}}>
+     <div style={{border:"1px solid #222",padding:"7px 9px",fontWeight:800,marginBottom:9}}>CLIENT</div>
+     <div style={{padding:"0 2px",lineHeight:1.55}}>
+      <b>{current.client_denumire}</b>
+      <div>Adresă: {current.client_adresa||"—"}</div>
+      <div>Cod fiscal: {current.client_cui||"—"}</div>
+      <div>Reg. comerțului: {current.client_nr_reg_com||"—"}</div>
+      {current.client_email&&<div>E-mail: {current.client_email}</div>}
+     </div>
+    </section>
+   </div>
+   <table className="table" style={{marginTop:8,border:"1px solid #222"}}>
+    <thead><tr>
+     <th style={{border:"1px solid #222",color:"#111"}}>Nr. crt.</th>
+     <th style={{border:"1px solid #222",color:"#111"}}>Denumirea produselor sau a serviciilor</th>
+     <th style={{border:"1px solid #222",color:"#111"}}>UM</th>
+     <th style={{border:"1px solid #222",color:"#111"}}>Cantitate</th>
+     <th style={{border:"1px solid #222",color:"#111"}}>Preț unitar</th>
+     <th style={{border:"1px solid #222",color:"#111"}}>Valoare</th>
+     <th style={{border:"1px solid #222",color:"#111"}}>Cota TVA</th>
+     <th style={{border:"1px solid #222",color:"#111"}}>Valoare TVA</th>
+    </tr></thead>
+    <tbody>{(current.items||[]).map((x:any,i:number)=>{
+      const net=Number(x.valoare_totala??(Number(x.cantitate||0)*Number(x.pret_unitar||0)));
+      const rate=Number(x.cota_tva||0);
+      const vat=net*rate/100;
+      return <tr key={x.id||i}>
+       <td style={{border:"1px solid #ccc"}}>{i+1}</td>
+       <td style={{border:"1px solid #ccc"}}>{x.descriere}</td>
+       <td style={{border:"1px solid #ccc"}}>{x.unitate}</td>
+       <td style={{border:"1px solid #ccc"}}>{Number(x.cantitate||0).toLocaleString("ro-RO")}</td>
+       <td style={{border:"1px solid #ccc"}}>{money(Number(x.pret_unitar||0))}</td>
+       <td style={{border:"1px solid #ccc"}}>{money(net)}</td>
+       <td style={{border:"1px solid #ccc"}}>{rate}%</td>
+       <td style={{border:"1px solid #ccc"}}>{money(vat)}</td>
+      </tr>
+    })}</tbody>
+   </table>
+   <div style={{display:"flex",justifyContent:"flex-end",marginTop:18}}>
+    <div style={{minWidth:270,lineHeight:1.8}}>
+     <div style={{display:"flex",justifyContent:"space-between",gap:20}}><span>Total valoare</span><b>{money(Number(current.total_fara_tva??current.total??0))}</b></div>
+     <div style={{display:"flex",justifyContent:"space-between",gap:20}}><span>Total TVA</span><b>{money(Number(current.total_tva||0))}</b></div>
+     <div style={{borderTop:"1px solid #222",marginTop:6,paddingTop:7,display:"flex",justifyContent:"space-between",gap:20,fontSize:17,fontWeight:800}}><span>TOTAL DE PLATĂ</span><span>{money(Number(current.total))}</span></div>
+    </div>
+   </div>
+   <div style={{borderTop:"1px solid #999",marginTop:34,paddingTop:10,fontSize:11,lineHeight:1.5}}>
+    <div>Factura circulă fără semnătură și ștampilă, conform prevederilor Codului fiscal.</div>
+    {current.observatii&&<div style={{marginTop:12,border:"1px solid #999",padding:8}}>Observații: {current.observatii}</div>}
+   </div>
+  </div>
+ </div>}
  <footer className="muted no-print" style={{marginTop:24}}>Datele sunt salvate în baza de date. Emiterea PDF se face prin funcția Tipărește / Salvează PDF.</footer></main>
 }
