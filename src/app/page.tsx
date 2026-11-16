@@ -164,7 +164,7 @@ export default function Home(){
    <p className="muted">Plățile sunt evidențiate separat. Înregistrarea în Registrul-jurnal se face separat, la data plății efective.</p>
   </div>
  </section>}
- {tab==="spv"<section className="panel no-print">
+ {tab==="spv"&&<section className="panel no-print">
   <h1>Facturi furnizori – ANAF SPV</h1>
   <p className="muted">Certificatul ANAF este conectat. Preia facturile primite în SPV și verifică documentele înainte de asocierea lor cu plățile din registrul-jurnal.</p>
   <div className="panel" style={{background:"#f7f9fc",border:"1px solid #e3e8ef",marginTop:18}}>
