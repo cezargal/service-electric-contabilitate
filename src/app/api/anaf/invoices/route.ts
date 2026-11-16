@@ -58,7 +58,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: payload?.eroare || payload?.message || `ANAF a răspuns cu HTTP ${response.status}.` }, { status: response.status >= 400 ? response.status : 502 });
     }
 
-    const messages = extractMessages(payload).filter((m) => String(m?.tip || "").toUpperCase().includes("PRIMIT") || m?.cif_beneficiar === cif);
+    const messages = extractMessages(payload);
     if (messages.length) {
       const { error: saveError } = await supabase.rpc("save_anaf_supplier_messages", {
         p_secret: storageSecret, p_cif: cif, p_messages: messages,
