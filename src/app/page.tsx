@@ -43,7 +43,7 @@ export default function Home(){
   if(!inv.total||inv.total<=0){setSupplierStatus("Totalul facturii nu a putut fi extras din XML. Nu am importat o sumă incorectă.");return}
   setSupplierPreviewLoading(true);setSupplierStatus("");
   try{
-   const response=await fetch("/api/anaf/import-rjip",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({cif:supplierCif,id:supplierPreview.id,invoice:inv,courierReceipt,courierReceiptDate,supplierPaymentDate})});
+   const {data:{session:activeSession}}=await supabase.auth.getSession();const response=await fetch("/api/anaf/import-rjip",{method:"POST",headers:{"Content-Type":"application/json","Authorization":`Bearer ${activeSession?.access_token||""}`},body:JSON.stringify({cif:supplierCif,id:supplierPreview.id,invoice:inv,courierReceipt,courierReceiptDate,supplierPaymentDate})});
    const data=await response.json();if(!response.ok)throw new Error(data.error||"Importul în RJIP a eșuat.");
    setSupplierStatus(data.duplicate?"Factura exista deja în RJIP; nu am creat o dublură.":"Factura a fost importată în RJIP, în așteptarea verificării plății bancare.");
    setSupplierPreview(null);
