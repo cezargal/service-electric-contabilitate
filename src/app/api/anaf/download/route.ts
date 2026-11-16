@@ -47,10 +47,10 @@ function extractXmlFromZip(zip: Buffer): string {
 function xmlValue(xml: string, tag: string): string {
   const re = new RegExp("<(?:[\\w.-]+:)?"+tag+"\\b[^>]*>([\\s\\S]*?)<\\/(?:[\\w.-]+:)?"+tag+"\\s*>","i");
   const match = xml.match(re);
-  return (match?.[1] || "").replace(/<[^>]+>/g," ").replace(/&amp;/g,"&").replace(/&lt;/g,"<").replace(/&gt;/g,">").replace(/&quot;/g,'"').replace(/&#39;/g,"'").replace(/\\s+/g," ").trim();
+  return (match?.[1] || "").replace(/<[^>]+>/g," ").replace(/&amp;/g,"&").replace(/&lt;/g,"<").replace(/&gt;/g,">").replace(/&quot;/g,'"').replace(/&#39;/g,"'").replace(/\s+/g," ").trim();
 }
 function parseInvoice(xml: string) {
- const supplier = xml.match(/<(?:[\\w.-]+:)?AccountingSupplierParty\\b[\\s\\S]*?<\\/(?:[\\w.-]+:)?AccountingSupplierParty>/i)?.[0] || xml;
+ const supplier = xml.match(new RegExp("<(?:[\\w.-]+:)?AccountingSupplierParty\\b[\\s\\S]*?<\\/(?:[\\w.-]+:)?AccountingSupplierParty>","i"))?.[0] || xml;
  const supplierName = xmlValue(supplier,"RegistrationName") || xmlValue(supplier,"Name");
  const supplierCif = xmlValue(supplier,"CompanyID");
  const invoiceNumber = xmlValue(xml,"ID");
@@ -58,7 +58,7 @@ function parseInvoice(xml: string) {
  const dueDate = xmlValue(xml,"DueDate");
  const currency = xmlValue(xml,"DocumentCurrencyCode") || "RON";
  const total = Number((xmlValue(xml,"PayableAmount") || xmlValue(xml,"TaxInclusiveAmount") || "0").replace(",","."));
- const lines = [...xml.matchAll(/<(?:[\\w.-]+:)?InvoiceLine\\b[\\s\\S]*?<\\/(?:[\\w.-]+:)?InvoiceLine>/gi)].map(m=>({
+ const lines = [...xml.matchAll(new RegExp("<(?:[\\w.-]+:)?InvoiceLine\\b[\\s\\S]*?<\\/(?:[\\w.-]+:)?InvoiceLine>","gi"))].map(m=>({
    description: xmlValue(m[0],"Name") || xmlValue(m[0],"Description") || "Articol",
    quantity: xmlValue(m[0],"InvoicedQuantity"),
    unitPrice: xmlValue(m[0],"PriceAmount"),
