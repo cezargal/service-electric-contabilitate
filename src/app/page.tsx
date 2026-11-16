@@ -85,7 +85,21 @@ export default function Home(){
  if(!session)return <main className="shell" style={{maxWidth:460,paddingTop:80}}><div className="panel"><img src="/service-electric-logo.svg" alt="SERVICE ELECTRIC by Cezar Gălățanu" style={{width:"100%",maxWidth:340,height:"auto",display:"block",margin:"0 auto 18px"}}/><h1>Facturare</h1><p className="muted">Autentifică-te pentru a emite facturi. Accesul este restricționat la contul autorizat.</p>{error&&<div className="error">{error}</div>}<form onSubmit={signIn}><div className="field"><label>E-mail</label><input type="email" value={loginEmail} onChange={e=>setLoginEmail(e.target.value)} required/></div><div className="field"><label>Parolă</label><input type="password" value={loginPass} onChange={e=>setLoginPass(e.target.value)} required/></div><button className="btn" style={{width:"100%"}}>Intră în aplicație</button></form></div></main>;
  return <main className="shell"><header className="top"><img src="/service-electric-logo.svg" alt="SERVICE ELECTRIC by Cezar Gălățanu" style={{width:340,maxWidth:"75%",height:"auto",display:"block"}}/><div className="no-print"><button className="btn secondary" onClick={signOut} aria-label="Ieșire din cont">Ieșire</button></div></header>
  {error&&<div className="error no-print">{error}</div>}{notice&&<div className="success no-print">{notice}</div>}
- <nav className="tabs no-print">{[["new","Factură nouă"],["invoices","Facturi emise"],["clients","Clienți"],["import","Import Oblio"],["rjip","Registru-jurnal"]].map(([v,l])=><button key={v} className={"tab "+(tab===v?"active":"")} onClick={()=>{setTab(v);setError("");setNotice("")}}>{l}</button>)}</nav>
+ <nav className="tabs no-print">{[["new","Factură nouă"],["invoices","Facturi emise"],["clients","Clienți"],["import","Import Oblio"],["spv","Facturi furnizori / SPV"],["rjip","Registru-jurnal"]].map(([v,l])=><button key={v} className={"tab "+(tab===v?"active":"")} onClick={()=>{setTab(v);setError("");setNotice("")}}>{l}</button>)}</nav>
+ {tab==="spv"&&<section className="panel no-print">
+  <h1>Facturi furnizori – ANAF SPV</h1>
+  <p className="muted">Conectează certificatul digital autorizat pentru CUI-ul întreprinderii individuale. După autorizare vom putea prelua XML-urile facturilor primite, le vom arhiva și le vom asocia plăților din registrul-jurnal fără să dublăm cheltuielile.</p>
+  <div className="panel" style={{background:"#f7f9fc",border:"1px solid #e3e8ef",marginTop:18}}>
+   <h2>Conectare securizată</h2>
+   <p className="muted">Se va deschide pagina ANAF pentru autentificarea cu certificatul Trans Sped. Alege certificatul autorizat și aprobă accesul pentru aplicația SERVICE ELECTRIC.</p>
+   <button className="btn" onClick={()=>window.location.assign("/api/anaf/connect")}>Conectează certificatul ANAF</button>
+   <p className="muted" style={{marginTop:12,fontSize:13}}>Tokenurile sunt salvate criptat pe server. Nu introduce aici PIN-ul și nu încărca fișierul certificatului.</p>
+  </div>
+  <div style={{marginTop:18}}>
+   <h2>Ce vom prelua</h2>
+   <ul><li>Facturile primite în SPV și fișierul XML original</li><li>Furnizor, CUI, număr, dată, scadență și totaluri</li><li>Asocierea documentului cu plata din bancă sau numerar</li><li>Înregistrarea cheltuielii în RJIP numai la plată, fără dubluri</li></ul>
+  </div>
+ </section>}
  {tab==="rjip"&&<section className="panel no-print" style={{padding:0,overflow:"hidden"}}><iframe title="Registru-jurnal" src="/registru-jurnal.html" onLoad={e=>{const frame=e.currentTarget;const doc=frame.contentDocument;if(!doc)return;const resize=()=>{frame.style.height=Math.max(doc.documentElement.scrollHeight,doc.body.scrollHeight)+"px"};resize();new ResizeObserver(resize).observe(doc.body);}} style={{display:"block",width:"100%",height:"1200px",border:0,background:"#f3f6fa"}}/></section>}
  {tab==="import"&&<>
   <div className="panel no-print">
