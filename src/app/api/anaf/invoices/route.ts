@@ -73,14 +73,23 @@ export async function GET(request: NextRequest) {
       cif,
       days,
       count: messages.length,
-      messages: messages.map((m) => ({
-        id: String(m.id_descarcare ?? m.id ?? m.id_solicitare ?? ""),
-        date: m.data_creare ?? null,
-        type: m.tip ?? "",
-        supplierCif: m.cif_emitent ?? "",
-        buyerCif: m.cif_beneficiar ?? "",
-        details: m.detalii ?? "",
-      })),
+      messages: messages.map((m) => {
+        const details = String(m.detalii ?? "");
+        const supplierMatch = details.match(/cif_emitent=(\\d+)/i);
+        const buyerMatch = details.match(/cif_beneficiar=(\\d+)/i);
+        const rawDate = String(m.data_creare ?? "");
+        const date = /^\\d{12}$/.test(rawDate)
+          ? `${rawDate.slice(0,4)}-${rawDate.slice(4,6)}-${rawDate.slice(6,8)}T${rawDate.slice(8,10)}:${rawDate.slice(10,12)}:00+02:00`
+          : rawDate || null;
+        return {
+          id: String(m.id_descarcare ?? m.id ?? m.id_solicitare ?? ""),
+          date,
+          type: m.tip ?? "",
+          supplierCif: m.cif_emitent ?? supplierMatch?.[1] ?? "",
+          buyerCif: m.cif_beneficiar ?? buyerMatch?.[1] ?? cif,
+          details,
+        };
+      }),
     });
   } catch (error: any) {
     console.error("ANAF supplier messages error", error?.message || "unknown");
