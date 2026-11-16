@@ -8,15 +8,23 @@ function readTag(xml: string, tag: string): string {
 }
 function invoiceMetadata(xml: string) {
   const supplier = xml.match(/<(?:[\w.-]+:)?AccountingSupplierParty\b[\s\S]*?<\/(?:[\w.-]+:)?AccountingSupplierParty>/i)?.[0] || xml;
-  const amount = readTag(xml, "PayableAmount") || readTag(xml, "TaxInclusiveAmount");
-  const lines = [...xml.matchAll(new RegExp("<(?:[\\\\w.-]+:)?InvoiceLine\\\\b[\\\\s\\\\S]*?<\\\\/(?:[\\\\w.-]+:)?InvoiceLine>", "gi"))].map((m) => ({
+  const amount = readTag(xml, "TaxInclusiveAmount") || readTag(xml, "PayableAmount");
+  const payable = readTag(xml, "PayableAmount");
+  const prepaid = readTag(xml, "PrepaidAmount");
+  const tax = readTag(xml, "TaxAmount");
+  const subtotal = readTag(xml, "TaxExclusiveAmount");
+  const lines = [...xml.matchAll(/<(?:[\\w.-]+:)?InvoiceLine\\b[\\s\\S]*?<\\/(?:[\\w.-]+:)?InvoiceLine>/gi)].map((m) => ({
     description: readTag(m[0], "Name") || readTag(m[0], "Description") || "Articol",
     quantity: readTag(m[0], "InvoicedQuantity"),
     unit_price: readTag(m[0], "PriceAmount"),
     line_total: readTag(m[0], "LineExtensionAmount"),
     unit: (m[0].match(/InvoicedQuantity[^>]*unitCode="([^"]+)"/i) || [])[1] || ""
   }));
-  return { supplier_name: readTag(supplier, "RegistrationName") || readTag(supplier, "Name") || null, supplier_cif: readTag(supplier, "CompanyID") || null, invoice_number: readTag(xml, "ID") || null, invoice_date: readTag(xml, "IssueDate") || null, due_date: readTag(xml, "DueDate") || null, currency: readTag(xml, "DocumentCurrencyCode") || "RON", invoice_total: amount ? Number(amount.replace(",", ".")) : null, lines };
+  const customer = xml.match(/<(?:[\\w.-]+:)?AccountingCustomerParty\\b[\\s\\S]*?<\\/(?:[\\w.-]+:)?AccountingCustomerParty>/i)?.[0] || "";
+  const supplierAddress = readTag(supplier, "StreetName");
+  const customerAddress = readTag(customer, "StreetName");
+  const num = (v: string) => v ? Number(v.replace(",", ".")) : 0;
+  return { supplier_name: readTag(supplier, "RegistrationName") || readTag(supplier, "Name") || null, supplier_cif: readTag(supplier, "CompanyID") || null, supplier_address: supplierAddress, customer_name: readTag(customer, "RegistrationName") || null, customer_cif: readTag(customer, "CompanyID") || null, customer_address: customerAddress, invoice_number: readTag(xml, "ID") || null, invoice_date: readTag(xml, "IssueDate") || null, due_date: readTag(xml, "DueDate") || null, currency: readTag(xml, "DocumentCurrencyCode") || "RON", invoice_total: amount ? num(amount) : null, subtotal: num(subtotal), tax_total: num(tax), prepaid_total: num(prepaid), payable_amount: num(payable), lines };
 }
 
 async function getAuthorizedClient(request: NextRequest) {
