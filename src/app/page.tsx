@@ -86,7 +86,7 @@ export default function Home(){
  return <main className="shell"><header className="top"><img src="/service-electric-logo.svg" alt="SERVICE ELECTRIC by Cezar Gălățanu" style={{width:340,maxWidth:"75%",height:"auto",display:"block"}}/><div className="no-print"><button className="btn secondary" onClick={signOut} aria-label="Ieșire din cont">Ieșire</button></div></header>
  {error&&<div className="error no-print">{error}</div>}{notice&&<div className="success no-print">{notice}</div>}
  <nav className="tabs no-print">{[["new","Factură nouă"],["invoices","Facturi emise"],["clients","Clienți"],["import","Import Oblio"],["rjip","Registru-jurnal"]].map(([v,l])=><button key={v} className={"tab "+(tab===v?"active":"")} onClick={()=>{setTab(v);setError("");setNotice("")}}>{l}</button>)}</nav>
- {tab==="rjip"&&<section className="panel no-print" style={{padding:0,overflow:"hidden"}}><iframe title="Registru-jurnal" src="/registru-jurnal.html" style={{display:"block",width:"100%",height:"calc(100vh - 190px)",minHeight:850,border:0,background:"#f3f6fa"}}/></section>}
+ {tab==="rjip"&&<section className="panel no-print" style={{padding:0,overflow:"hidden"}}><iframe title="Registru-jurnal" src="/registru-jurnal.html" onLoad={e=>{const frame=e.currentTarget;const doc=frame.contentDocument;if(!doc)return;const resize=()=>{frame.style.height=Math.max(doc.documentElement.scrollHeight,doc.body.scrollHeight)+"px"};resize();new ResizeObserver(resize).observe(doc.body);}} style={{display:"block",width:"100%",height:"1200px",border:0,background:"#f3f6fa"}}/></section>}
  {tab==="import"&&<>
   <div className="panel no-print">
    <h1>Import istoric din Oblio</h1>
