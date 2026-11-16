@@ -3,7 +3,7 @@ import { createClient } from "@supabase/supabase-js";
 
 
 function readTag(xml: string, tag: string): string {
-  const pattern = new RegExp("<(?:[\\w.-]+:)?" + tag + "\\b[^>]*>([\\s\\S]*?)<\\/(?:[\\w.-]+:)?" + tag + "\\s*>", "i");
+  const pattern = new RegExp("<(?:[\w.-]+:)?" + tag + "\\b[^>]*>([\s\S]*?)<\/(?:[\w.-]+:)?" + tag + "\\s*>", "i");
   return (xml.match(pattern)?.[1] || "").replace(/<[^>]+>/g, " ").replace(/&amp;/g, "&").replace(/&lt;/g, "<").replace(/&gt;/g, ">").trim();
 }
 function invoiceMetadata(xml: string) {
@@ -13,14 +13,14 @@ function invoiceMetadata(xml: string) {
   const prepaid = readTag(xml, "PrepaidAmount");
   const tax = readTag(xml, "TaxAmount");
   const subtotal = readTag(xml, "TaxExclusiveAmount");
-  const lines = [...xml.matchAll(/<(?:[\\w.-]+:)?InvoiceLine\\b[\\s\\S]*?<\\/(?:[\\w.-]+:)?InvoiceLine>/gi)].map((m) => ({
+  const lines = [...xml.matchAll(/<(?:[\w.-]+:)?InvoiceLine\b[\s\S]*?<\/(?:[\w.-]+:)?InvoiceLine>/gi)].map((m) => ({
     description: readTag(m[0], "Name") || readTag(m[0], "Description") || "Articol",
     quantity: readTag(m[0], "InvoicedQuantity"),
     unit_price: readTag(m[0], "PriceAmount"),
     line_total: readTag(m[0], "LineExtensionAmount"),
     unit: (m[0].match(/InvoicedQuantity[^>]*unitCode="([^"]+)"/i) || [])[1] || ""
   }));
-  const customer = xml.match(/<(?:[\\w.-]+:)?AccountingCustomerParty\\b[\\s\\S]*?<\\/(?:[\\w.-]+:)?AccountingCustomerParty>/i)?.[0] || "";
+  const customer = xml.match(/<(?:[\w.-]+:)?AccountingCustomerParty\b[\s\S]*?<\/(?:[\w.-]+:)?AccountingCustomerParty>/i)?.[0] || "";
   const supplierAddress = readTag(supplier, "StreetName");
   const customerAddress = readTag(customer, "StreetName");
   const num = (v: string) => v ? Number(v.replace(",", ".")) : 0;
