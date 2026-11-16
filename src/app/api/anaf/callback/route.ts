@@ -2,9 +2,6 @@ import { NextRequest, NextResponse } from "next/server";
 import { createCipheriv, randomBytes } from "node:crypto";
 import { createClient } from "@supabase/supabase-js";
 
-export const runtime = "nodejs";
-export const dynamic = "force-dynamic";
-
 function encryptToken(token: string, keyHex: string) {
   const key = Buffer.from(keyHex, "hex");
   if (key.length !== 32) throw new Error("Cheia de criptare ANAF trebuie să aibă 32 de octeți.");
