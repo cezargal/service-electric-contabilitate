@@ -102,8 +102,8 @@ export default function Home(){
   </div>
   {supplierMessages.length>0&&<div style={{marginTop:20}}>
    <h2>Mesaje e-Factura primite</h2>
-   <div className="scroll"><table className="table"><thead><tr><th>Data</th><th>Furnizor (CUI)</th><th>Tip</th><th>Detalii</th><th>ID ANAF</th></tr></thead>
-   <tbody>{supplierMessages.map((m,i)=><tr key={m.id||i}><td>{m.date?new Date(m.date).toLocaleString("ro-RO"):"—"}</td><td>{m.supplierCif||"—"}</td><td>{m.type||"—"}</td><td>{m.details||"—"}</td><td>{m.id||"—"}</td></tr>)}</tbody></table></div>
+   <div className="scroll"><table className="table"><thead><tr><th>Data</th><th>Furnizor (CUI)</th><th>Tip</th><th>Detalii</th><th>ID ANAF</th><th>XML</th></tr></thead>
+   <tbody>{supplierMessages.map((m,i)=><tr key={m.id||i}><td>{m.date?new Date(m.date).toLocaleString("ro-RO"):"—"}</td><td>{m.supplierCif||"—"}</td><td>{m.type||"—"}</td><td>{m.details||"—"}</td><td>{m.id||"—"}</td><td><button className="btn secondary" disabled={!m.id} onClick={()=>window.location.assign(`/api/anaf/download?cif=${encodeURIComponent(supplierCif)}&id=${encodeURIComponent(m.id)}`)}>Descarcă XML</button></td></tr>)}</tbody></table></div>
   </div>}
   <p className="muted" style={{marginTop:18,fontSize:13}}>Documentele preluate nu generează automat cheltuieli în registrul-jurnal. Înregistrarea se va face numai după verificarea documentului și a plății.</p>
  </section>}
