@@ -9,7 +9,7 @@ function readTag(xml: string, tag: string): string {
 function invoiceMetadata(xml: string) {
   const supplier = xml.match(/<(?:[\w.-]+:)?AccountingSupplierParty\b[\s\S]*?<\/(?:[\w.-]+:)?AccountingSupplierParty>/i)?.[0] || xml;
   const amount = readTag(xml, "PayableAmount") || readTag(xml, "TaxInclusiveAmount");
-  const lines = [...xml.matchAll(/<(?:[\\w.-]+:)?InvoiceLine\\b[\\s\\S]*?<\\/(?:[\\w.-]+:)?InvoiceLine>/gi)].map((m) => ({
+  const lines = [...xml.matchAll(new RegExp("<(?:[\\\\w.-]+:)?InvoiceLine\\\\b[\\\\s\\\\S]*?<\\\\/(?:[\\\\w.-]+:)?InvoiceLine>", "gi"))].map((m) => ({
     description: readTag(m[0], "Name") || readTag(m[0], "Description") || "Articol",
     quantity: readTag(m[0], "InvoicedQuantity"),
     unit_price: readTag(m[0], "PriceAmount"),
