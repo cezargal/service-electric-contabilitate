@@ -21,7 +21,7 @@ export async function GET(request: NextRequest) {
   try {
     const { client, secret } = await getAuthorizedClient(request);
     const id = request.nextUrl.searchParams.get("id");
-    const cif = (request.nextUrl.searchParams.get("cif") || "").replace(/^RO/i, "").replace(/\\D/g, "");
+    const cif = (request.nextUrl.searchParams.get("cif") || "").replace(/^RO/i, "").replace(/\D/g, "");
     if (id) {
       if (!cif) return NextResponse.json({ error: "Lipsește CUI-ul documentului." }, { status: 400 });
       const { data, error } = await client.rpc("get_anaf_supplier_archive_xml", {
