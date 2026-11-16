@@ -1,0 +1,445 @@
+<!doctype html>
+<html lang="ro">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Registru-jurnal · SERVICE ELECTRIC</title>
+<style>
+:root{--navy:#071a38;--blue:#2563eb;--bg:#f3f6fa;--text:#172033;--muted:#667085;--line:#e2e8f0;--green:#16723b;--red:#b42318}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font-family:Inter,system-ui,Arial,sans-serif}
+.wrap{max-width:1320px;margin:auto;padding:22px}.head{background:linear-gradient(135deg,#06162f,#123d6b);color:#fff;border-radius:16px;padding:20px 22px;display:flex;justify-content:space-between;align-items:center;gap:14px}.head h1{margin:0;font-size:23px}.head a{color:#fff;text-decoration:none;font-weight:800}.sub{font-size:12px;opacity:.78;margin-top:5px}
+.panel,.metric{background:#fff;border:1px solid var(--line);border-radius:14px;padding:17px;box-shadow:0 6px 22px #071a380c}.panel{margin-top:15px}.metrics{display:grid;grid-template-columns:repeat(7,1fr);gap:12px;margin-top:15px}.metric small{display:block;color:var(--muted);font-size:11px;font-weight:800;text-transform:uppercase}.metric strong{display:block;font-size:23px;margin-top:6px;color:var(--navy)}.green{color:var(--green)!important}.red{color:var(--red)!important}
+h2{font-size:16px;margin:0 0 4px;color:var(--navy)}.muted{font-size:11px;color:var(--muted)}.formgrid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:11px;margin-top:13px}.field label{display:block;font-size:11px;font-weight:800;color:#344054;margin-bottom:5px}.field input,.field select,.field textarea{width:100%;padding:10px 11px;border:1px solid #cfd8e5;border-radius:9px;background:#fff;font:inherit;font-size:13px}.field textarea{min-height:40px;resize:vertical}.span2{grid-column:span 2}.actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:13px}.btn{border:0;border-radius:9px;padding:10px 14px;background:var(--navy);color:#fff;font-weight:800;cursor:pointer}.btn.secondary{background:#fff;color:var(--navy);border:1px solid #cfd8e5}.btn:disabled{opacity:.55;cursor:wait}
+.filters{display:flex;gap:9px;flex-wrap:wrap;margin:13px 0}.filters input,.filters select{padding:9px 10px;border:1px solid #cfd8e5;border-radius:9px;background:#fff}.tablewrap{overflow:auto}.table{width:100%;border-collapse:collapse;min-width:900px}.table th,.table td{padding:10px 9px;border-bottom:1px solid #edf0f4;text-align:left;font-size:12px}.table th{font-size:10px;text-transform:uppercase;color:var(--muted);background:#f8fafc}.right{text-align:right!important;white-space:nowrap}.tag{display:inline-block;border-radius:99px;padding:4px 8px;font-size:10px;font-weight:900;background:#eef2f7;color:#344054}.tag.in{background:#dcf7e5;color:#16723b}.tag.out{background:#fee2e2;color:#991b1b}.message{margin-top:10px;font-size:12px}.error{color:#b42318}.success{color:#16723b}.empty{text-align:center;padding:25px;color:var(--muted)}
+#printArea{display:none}
+@media print{@page{size:A4 portrait;margin:9mm 8mm 12mm}body{background:#fff!important;color:#111!important;font-family:Arial,sans-serif}.wrap{display:none!important}#printArea{display:block!important;font-size:9px;color:#111}#printArea .print-head{border-bottom:2px solid #17365d;padding-bottom:7px;margin-bottom:9px}#printArea h1{font-size:16px;margin:0 0 4px;color:#17365d}#printArea .print-meta{font-size:9px;line-height:1.5}#printArea table{width:100%;border-collapse:collapse;table-layout:fixed}#printArea thead{display:table-header-group}#printArea tfoot{display:table-row-group}#printArea th,#printArea td{border:1px solid #777;padding:4px 5px;font-size:8px;vertical-align:middle;overflow-wrap:anywhere}#printArea tbody tr:nth-child(even){background:#f7f9fc!important}#printArea td:nth-child(4){font-size:8px}#printArea .print-meta{font-size:9px;line-height:1.4}#printArea th{background:#e9eef5!important;color:#111;text-align:center;font-weight:bold}#printArea td.num{text-align:right;white-space:nowrap}#printArea td.center{text-align:center}#printArea .print-summary{margin-top:8px;display:flex;justify-content:space-between;gap:12px;font-weight:bold;border-top:1px solid #333;padding-top:6px}#printArea .print-note{margin-top:6px;font-size:8px;color:#333}#printArea .page-number{position:fixed;bottom:-8mm;right:0;font-size:8px;color:#555}#printArea .page-number:after{content:"Pagina " counter(page) " / " counter(pages)}tr{break-inside:avoid} }
+@media(max-width:850px){.formgrid{grid-template-columns:repeat(2,minmax(0,1fr))}.metrics{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:560px){.wrap{padding:11px}.head{display:block}.head a{display:inline-block;margin-top:12px}.formgrid{grid-template-columns:1fr}.span2{grid-column:span 1}.metrics{gap:8px}.metric{padding:12px}.metric strong{font-size:19px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header class="head"><div><h1>📒 Registru-jurnal</h1><div class="sub">SERVICE ELECTRIC · operațiuni financiare ale Întreprinderii Individuale</div></div><a href="/">← Dashboard financiar</a></header>
+<section class="metrics">
+<div class="metric"><small>Încasări înregistrate</small><strong class="green" id="sumIn">0,00 lei</strong></div>
+<div class="metric"><small>Plăți înregistrate</small><strong class="red" id="sumOut">0,00 lei</strong></div>
+<div class="metric"><small>Diferență în perioadă</small><strong id="balance">0,00 lei</strong></div>
+<div class="metric"><small>Flux numerar</small><strong id="cashFlow">0,00 lei</strong></div>
+<div class="metric"><small>Flux bancă</small><strong id="bankFlow">0,00 lei</strong></div>
+<div class="metric"><small>Cheltuieli deductibile estimate</small><strong id="deductible">0,00 lei</strong></div><div class="metric"><small>Carburant de verificat</small><strong id="fuelPending">0,00 lei</strong><span class="muted" id="fuelPendingCount">0 bonuri de asociat</span></div>
+</section>
+<section class="panel">
+<h2>Adaugă operațiune</h2><div class="muted">Înregistrează încasarea sau plata efectivă. Pentru cumpărături fără factură SPV, selectează „Bon fiscal”, metoda „Card” și completează numărul bonului.</div>
+<form id="entryForm">
+<div class="formgrid">
+<div class="field"><label for="tip">Tip operațiune</label><select id="tip"><option value="incasare">Încasare</option><option value="plata">Plată</option></select></div>
+<div class="field"><label for="data">Data și ora</label><input id="data" type="datetime-local" required></div>
+<div class="field"><label for="suma">Sumă (lei)</label><input id="suma" type="number" min="0.01" step="0.01" required></div>
+<div class="field"><label for="metoda">Metoda</label><select id="metoda"><option value="">Nespecificată</option><option>Numerar</option><option>Card</option><option>Transfer bancar</option><option>Ordin de plată</option><option>Altă metodă</option></select></div>
+<div class="field"><label for="categorie">Categorie</label><select id="categorie"></select></div>
+<div class="field"><label for="contraparte">Client / furnizor / contraparte</label><input id="contraparte" maxlength="180"></div>
+<div class="field span2"><label for="descriere">Descriere operațiune</label><input id="descriere" maxlength="300" required placeholder="Ex.: încasare intervenție / combustibil / materiale"></div>
+<div class="field"><label for="docTip">Tip document</label><select id="docTip"><option value="">Fără document</option><option>Factură</option><option>Bon fiscal</option><option>Chitanță</option><option>Extras bancar</option><option>Alt document</option></select></div>
+<div class="field"><label for="docSerie">Serie document</label><input id="docSerie" maxlength="40"></div>
+<div class="field"><label for="docNumar">Număr document</label><input id="docNumar" maxlength="60"></div>
+<div class="field"><label for="docData">Data documentului</label><input id="docData" type="date"></div>
+<div class="field"><label for="deductibil">Procent deductibilitate</label><select id="deductibil"><option value="100">100%</option><option value="50">50%</option><option value="0">0%</option><option value="25">25%</option><option value="75">75%</option></select></div>
+<div class="field span2"><label for="note">Note</label><input id="note" maxlength="500" placeholder="Detalii suplimentare, dacă este cazul"></div>
+</div>
+<div class="actions"><button class="btn" id="save" type="submit">Salvează operațiunea</button><button class="btn secondary" type="reset">Resetează formularul</button></div>
+<div id="formMsg" class="message" role="status"></div>
+</form>
+</section>
+<section class="panel">
+<div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap"><div><h2>Operațiuni înregistrate</h2><div class="muted">Registrul este cronologic. Înregistrările nu se șterg din interfață; corecțiile se vor face prin operațiuni de corecție.</div></div><div class="actions" style="margin:0"><button class="btn secondary" id="previewOblio">Verifică încasări facturi emise</button><button class="btn primary" id="importOblio">Importă încasări facturi emise</button><button class="btn secondary" id="oblioReportBtn">Importă plăți numerar din Oblio</button><input id="oblioReportFile" type="file" accept=".pdf,application/pdf" hidden><button class="btn secondary" id="bankPdfBtn">Importă plăți carburant (BT PDF)</button><input id="bankPdf" type="file" accept=".pdf,application/pdf" hidden><button class="btn secondary" id="bankFileBtn">Importă plăți carburant (CSV)</button><input id="bankFile" type="file" accept=".csv,text/csv" hidden><button class="btn secondary" id="printJournal" type="button">Tipărește luna / PDF</button><button class="btn secondary" id="printYear" type="button">Tipărește anul / PDF</button><button class="btn secondary" id="export">Exportă CSV</button></div></div>
+<div class="filters"><label style="font-size:12px;font-weight:800;align-self:center" for="monthFilter">Luna registrului:</label><button class="btn secondary" id="prevMonth" type="button" aria-label="Luna precedentă">‹</button><input id="monthFilter" type="month" aria-label="Selectează luna"><button class="btn secondary" id="nextMonth" type="button" aria-label="Luna următoare">›</button><span id="monthStatus" class="muted">Se sincronizează luna selectată…</span><input id="from" type="date" aria-label="De la" hidden><input id="to" type="date" aria-label="Până la" hidden><select id="filterTip"><option value="">Toate operațiunile</option><option value="incasare">Încasări</option><option value="plata">Plăți</option></select><select id="filterReview"><option value="">Toate stările</option><option value="in_asteptare">De verificat</option><option value="asociata">Document asociat</option><option value="confirmata">Confirmate</option><option value="exclusa">Excluse din RJIP</option></select><input id="search" type="search" placeholder="Caută descriere, document, contraparte"></div>
+<div class="tablewrap"><table class="table"><thead><tr><th>Data</th><th>Tip</th><th>Categorie</th><th>Descriere</th><th>Contraparte</th><th>Document</th><th>Metodă</th><th class="right">Sumă</th><th class="right">Deductibil</th><th>Sursă</th></tr></thead><tbody id="rows"><tr><td colspan="10" class="empty">Se încarcă…</td></tr></tbody></table></div>
+<div id="listMsg" class="message"></div>
+</section>
+</div>
+<div id="printArea" aria-hidden="true"></div>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.57.4"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script><script src="config.js"></script>
+<script>
+(()=>{'use strict';
+const $=id=>document.getElementById(id), money=v=>Number(v||0).toLocaleString('ro-RO',{minimumFractionDigits:2,maximumFractionDigits:2})+' lei';
+const esc=v=>String(v??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+const localInput=()=>{const d=new Date(),p=n=>String(n).padStart(2,'0');return d.getFullYear()+'-'+p(d.getMonth()+1)+'-'+p(d.getDate())+'T'+p(d.getHours())+':'+p(d.getMinutes())};
+const cats={incasare:['Servicii și intervenții','Modernizare interfon','Instalări','Alte venituri'],plata:['Materiale și consumabile','Bonuri fiscale / cumpărături fără factură SPV','Combustibil / auto','Reparații și întreținere auto','Telefon și internet','Unelte și echipamente','Utilități','Servicii profesionale','Comisioane bancare','Taxe și impozite','Alte cheltuieli']};
+let sb,all=[];
+function fillCategories(){const tip=$('tip').value,old=$('categorie').value;$('categorie').innerHTML=cats[tip].map(x=>'<option>'+esc(x)+'</option>').join('');if(cats[tip].includes(old))$('categorie').value=old;$('deductibil').disabled=tip==='incasare';if(tip==='incasare')$('deductibil').value='0';else if(old==='Combustibil / auto'||$('categorie').value==='Combustibil / auto'||$('categorie').value==='Reparații și întreținere auto')$('deductibil').value='50';else if($('deductibil').value==='0')$('deductibil').value='100'}
+function getFilters(){return{from:$('from').value,to:$('to').value,tip:$('filterTip').value,review:$('filterReview').value,q:$('search').value.trim().toLocaleLowerCase('ro-RO')}}
+function filtered(){const f=getFilters();return all.filter(x=>{const dt=new Date(x.data_operatiunii),d=dt.getFullYear()+'-'+String(dt.getMonth()+1).padStart(2,'0')+'-'+String(dt.getDate()).padStart(2,'0'),hay=[x.descriere,x.contraparte,x.categorie,x.document_serie,x.document_numar].join(' ').toLocaleLowerCase('ro-RO');return(!f.from||d>=f.from)&&(!f.to||d<=f.to)&&(!f.tip||x.tip===f.tip)&&(!f.review||x.stare_verificare===f.review)&&(!f.q||hay.includes(f.q))})}
+function methodBucket(v){const m=String(v||'').normalize('NFD').replace(/[\\u0300-\\u036f]/g,'').toLowerCase().replace(/[^a-z0-9 ]/g,' ').replace(/\\s+/g,' ').trim();if(/numerar|cash|chitanta|bon fiscal/.test(m))return 'cash';if(/banca|bank|card|pos|ordin de plata|transfer|virament|op transfer/.test(m))return 'bank';return 'unknown'}
+function render(){const rows=filtered(),journal=rows.filter(x=>!['in_asteptare','exclusa'].includes(x.stare_verificare||'confirmata')),pendingFuel=rows.filter(x=>x.tip==='plata'&&x.stare_verificare==='in_asteptare'&&/combustibil|carburant/i.test(String(x.categorie||'')+' '+String(x.descriere||''))),pendingFuelSum=pendingFuel.reduce((s,x)=>s+Number(x.suma),0),ins=journal.filter(x=>x.tip==='incasare').reduce((s,x)=>s+Number(x.suma),0),outs=journal.filter(x=>x.tip==='plata').reduce((s,x)=>s+Number(x.suma),0),ded=journal.filter(x=>x.tip==='plata').reduce((s,x)=>s+Number(x.suma)*Number(x.deductibilitate_pct)/100,0);$('sumIn').textContent=money(ins);$('sumOut').textContent=money(outs);$('balance').textContent=money(ins-outs);const cashFlow=journal.reduce((sum,x)=>sum+(methodBucket(x.metoda_plata)==='cash'?(x.tip==='incasare'?1:-1)*Number(x.suma):0),0),bankFlow=journal.reduce((sum,x)=>sum+(methodBucket(x.metoda_plata)==='bank'?(x.tip==='incasare'?1:-1)*Number(x.suma):0),0);$('cashFlow').textContent=money(cashFlow);$('bankFlow').textContent=money(bankFlow);$('deductible').textContent=money(ded);$('fuelPending').textContent=money(pendingFuelSum);$('fuelPendingCount').textContent=pendingFuel.length+' bonuri de asociat';$('rows').innerHTML=rows.map(x=>{const doc=[x.document_tip,x.document_serie,x.document_numar].filter(Boolean).join(' '),st=x.stare_verificare||'confirmata';return '<tr><td>'+esc(new Date(x.data_operatiunii).toLocaleString('ro-RO'))+'</td><td><span class="tag '+(x.tip==='incasare'?'in':'out')+'">'+(x.tip==='incasare'?'Încasare':'Plată')+'</span></td><td>'+esc(x.categorie)+'</td><td>'+esc(x.descriere)+'</td><td>'+esc(x.contraparte||'—')+'</td><td>'+esc(doc||'—')+'</td><td>'+esc(x.metoda_plata||'—')+'</td><td class="right">'+money(x.suma)+'</td><td class="right">'+(x.tip==='plata'?money(Number(x.suma)*Number(x.deductibilitate_pct)/100)+' ('+Number(x.deductibilitate_pct)+'%)':'—')+'</td><td>'+esc(x.sursa)+'<br><span class="tag">'+({in_asteptare:'De verificat',asociata:'Document asociat',confirmata:'Confirmată',exclusa:'Exclusă'}[st]||st)+'</span><div class="actions"><button class="btn secondary reviewOp" data-id="'+x.id+'" data-action="associate" type="button">Asociază document</button><button class="btn secondary reviewOp" data-id="'+x.id+'" data-action="confirm" type="button">Confirmă</button><button class="btn secondary reviewOp" data-id="'+x.id+'" data-action="exclude" type="button">Exclude</button></div></td></tr>'}).join('')||'<tr><td colspan="10" class="empty">Nu există operațiuni în perioada selectată.</td></tr>'}
+async function load(){const r=await sb.from('operatiuni_financiare').select('*').order('data_operatiunii',{ascending:true}).limit(5000);if(r.error){$('rows').innerHTML='<tr><td colspan="10" class="empty error">'+esc(r.error.message)+'</td></tr>';return}all=r.data||[];render()}
+$('rows').addEventListener('click',async e=>{const b=e.target.closest('.reviewOp');if(!b)return;const item=all.find(x=>String(x.id)===b.dataset.id);if(!item)return;let patch={};if(b.dataset.action==='exclude'){if(!confirm('Marchezi tranzacția ca exclusă din RJIP? Rămâne păstrată în istoric și în extras.'))return;patch={stare_verificare:'exclusa',note:(item.note?item.note+' ':'')+'Exclusă manual din RJIP.'};}else if(b.dataset.action==='confirm'){if(!confirm('Confirmi că tranzacția este verificată și poate intra în RJIP?'))return;patch={stare_verificare:'confirmata'};}else{const docTip=prompt('Tip document (Bon fiscal / Factură / Chitanță):',item.document_tip||'Bon fiscal');if(docTip===null)return;const docNum=prompt('Număr document / bon:',item.document_numar||'');if(docNum===null)return;const docDate=prompt('Data documentului (AAAA-LL-ZZ):',item.document_data||item.data_operatiunii.slice(0,10));if(docDate===null)return;const category=prompt('Categorie / explicație scurtă:',item.categorie||'Combustibil / auto');if(category===null)return;patch={document_tip:docTip,document_numar:docNum||null,document_data:docDate||null,categorie:category,stare_verificare:'asociata',note:(item.note?item.note+' ':'')+'Document asociat manual.'};}b.disabled=true;try{const u=await sb.from('operatiuni_financiare').update(patch).eq('id',item.id);if(u.error)throw u.error;await load();$('listMsg').className='message success';$('listMsg').textContent='Tranzacția a fost actualizată.';}catch(err){$('listMsg').className='message error';$('listMsg').textContent='Nu am putut actualiza: '+err.message;}finally{b.disabled=false;}});
+async function selectMonth(m){if(!/^\d{4}-\d{2}$/.test(m))return;const [y,mo]=m.split('-').map(Number),last=new Date(y,mo,0).getDate();$('monthFilter').value=m;$('from').value=m+'-01';$('to').value=m+'-'+String(last).padStart(2,'0');render();await syncOblioMonth(m);}
+async function syncOblioMonth(m){const b=$('monthStatus');b.textContent='Se sincronizează încasările Oblio…';try{const session=(await sb.auth.getSession()).data?.session;if(!session)throw new Error('Sesiunea a expirat.');const after=m+'-01',[y,mo]=m.split('-').map(Number),before=m+'-'+String(new Date(y,mo,0).getDate()).padStart(2,'0');const response=await fetch('/api/oblio',{method:'POST',headers:{'Content-Type':'application/json',Authorization:'Bearer '+session.access_token},body:JSON.stringify({action:'import_collects',collectAfter:after,collectBefore:before})});const result=await response.json();if(!response.ok||result.error)throw new Error(result.error||'Sincronizarea Oblio a eșuat.');await load();b.textContent='Oblio actualizat · '+result.inserted+' încasări noi · '+money(result.totalInserted)+' · '+result.duplicates+' deja existente';}catch(err){b.textContent='Nu s-a putut actualiza Oblio: '+err.message;}}
+$('monthFilter').addEventListener('change',()=>selectMonth($('monthFilter').value));
+$('prevMonth').addEventListener('click',()=>{const [y,m]=$('monthFilter').value.split('-').map(Number);const d=new Date(y,m-2,1);selectMonth(d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0'));});
+$('nextMonth').addEventListener('click',()=>{const [y,m]=$('monthFilter').value.split('-').map(Number);const d=new Date(y,m,1);selectMonth(d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0'));});
+$('tip').addEventListener('change',fillCategories);$('categorie').addEventListener('change',()=>{if($('tip').value==='plata'&&['Combustibil / auto','Reparații și întreținere auto'].includes($('categorie').value))$('deductibil').value='50'});
+$('entryForm').addEventListener('reset',()=>setTimeout(()=>{ $('data').value=localInput();fillCategories();$('formMsg').textContent=''},0));
+$('entryForm').addEventListener('submit',async e=>{e.preventDefault();const b=$('save');b.disabled=true;$('formMsg').className='message';$('formMsg').textContent='Se salvează…';const tip=$('tip').value,pct=tip==='incasare'?0:Number($('deductibil').value);const payload={stare_verificare:'confirmata',tip,data_operatiunii:new Date($('data').value).toISOString(),suma:Number($('suma').value),metoda_plata:$('metoda').value||null,categorie:$('categorie').value,contraparte:$('contraparte').value.trim()||null,descriere:$('descriere').value.trim(),document_tip:$('docTip').value||null,document_serie:$('docSerie').value.trim()||null,document_numar:$('docNumar').value.trim()||null,document_data:$('docData').value||null,deductibilitate_pct:pct,note:$('note').value.trim()||null,sursa:'manual'};try{const r=await sb.from('operatiuni_financiare').insert(payload).select('*').single();if(r.error)throw r.error;$('formMsg').className='message success';$('formMsg').textContent='Operațiunea a fost salvată.';$('entryForm').reset();await load()}catch(err){$('formMsg').className='message error';$('formMsg').textContent='Nu am putut salva: '+(err.message||err)}finally{b.disabled=false}});
+['from','to','filterTip','filterReview','search'].forEach(id=>$(id).addEventListener(id==='search'?'input':'change',render));
+$('importOblio').addEventListener('click',async()=>{const b=$('importOblio');const collectAfter=$('from').value||$('monthFilter').value+'-01',collectBefore=$('to').value||new Date().toISOString().slice(0,10);if(collectAfter>collectBefore){$('listMsg').className='message error';$('listMsg').textContent='Data de început trebuie să fie înaintea datei de sfârșit.';return}if(!confirm('Import în Registrul-jurnal toate încasările Oblio cu data încasării între '+collectAfter+' și '+collectBefore+'? Înregistrările deja importate nu vor fi dublate.'))return;b.disabled=true;$('listMsg').className='message';$('listMsg').textContent='Se importă încasările din Oblio…';try{const session=(await sb.auth.getSession()).data?.session;if(!session)throw new Error('Sesiunea a expirat.');const response=await fetch('/api/oblio',{method:'POST',headers:{'Content-Type':'application/json',Authorization:'Bearer '+session.access_token},body:JSON.stringify({action:'import_collects',collectAfter,collectBefore})});const result=await response.json();if(!response.ok||result.error)throw new Error(result.error||'Eroare la import.');await load();$('listMsg').className='message success';$('listMsg').textContent='Import finalizat: '+result.inserted+' încasări noi; '+result.duplicates+' deja existente/duplicate ignorate. Total importat: '+money(result.totalInserted)+'. Facturi verificate: '+result.invoiceCount+'.';}catch(err){$('listMsg').className='message error';$('listMsg').textContent='Importul nu a fost finalizat: '+(err.message||err)}finally{b.disabled=false}});
+$('previewOblio').addEventListener('click',async()=>{const b=$('previewOblio');b.disabled=true;$('listMsg').className='message';$('listMsg').textContent='Se caută încasările după data efectivă a încasării în Oblio…';try{const session=(await sb.auth.getSession()).data?.session;if(!session)throw new Error('Sesiunea a expirat.');const collectAfter=$('from').value||'2026-01-01',collectBefore=$('to').value||new Date().toISOString().slice(0,10);if(collectAfter>collectBefore)throw new Error('Data de început trebuie să fie înaintea datei de sfârșit.');let offset=0,invoiceCount=0,rows=[],hasMore=true,pages=0;while(hasMore&&pages<500){const response=await fetch('/api/oblio',{method:'POST',headers:{'Content-Type':'application/json',Authorization:'Bearer '+session.access_token},body:JSON.stringify({action:'preview_collects',collectAfter,collectBefore,offset})});const result=await response.json();if(!response.ok||result.error)throw new Error(result.error||'Eroare la preluarea datelor Oblio.');rows.push(...(result.data||[]));invoiceCount+=Number(result.invoiceCount||0);hasMore=Boolean(result.hasMore);offset+=100;pages++;$('listMsg').textContent='Verificate '+invoiceCount+' facturi; încasări în interval: '+rows.length+'…';}if(hasMore)throw new Error('Verificarea a depășit limita de 500 de pagini. Intervalul este prea mare pentru o singură verificare.');const total=rows.reduce((s,x)=>s+Number(x.suma||0),0);const sample=rows.slice(0,12).map(x=>esc(x.data_operatiunii)+' · '+esc(x.document_serie)+' '+esc(x.document_numar)+' · '+esc(x.contraparte)+' · '+money(x.suma)).join('<br>');$('listMsg').className='message success';$('listMsg').innerHTML='<strong>Previzualizare Oblio — fără salvare în registru</strong><br>Data încasării: '+esc(collectAfter)+' – '+esc(collectBefore)+' · Facturi verificate: '+invoiceCount+' · Încasări găsite: '+rows.length+' · Total încasări: '+money(total)+' · Pagini citite: '+pages+(sample?'<div style="margin-top:7px;line-height:1.8">'+sample+'</div>':'<br>Nu au fost găsite încasări în perioada selectată.');}catch(err){$('listMsg').className='message error';$('listMsg').textContent='Nu am putut verifica Oblio: '+(err.message||err)}finally{b.disabled=false}});
+
+function csvRows(text){
+ const first=(text.split(/\r?\n/).find(x=>x.trim())||'');
+ const candidates=[';',',','\t'];let delim=';';for(const d of candidates){if(first.split(d).length>first.split(delim).length)delim=d;}
+ const out=[];let row=[],cell='',quoted=false;
+ for(let i=0;i<text.length;i++){const ch=text[i];if(ch==='"'&&quoted&&text[i+1]==='"'){cell+='"';i++;continue}if(ch==='"'){quoted=!quoted;continue}if(!quoted&&(ch===delim||ch==='\n'||ch==='\r')){if(ch===delim){row.push(cell);cell=''}else{row.push(cell);if(row.some(v=>v.trim()))out.push(row);row=[];cell='';if(ch==='\r'&&text[i+1]==='\n')i++}continue}cell+=ch}
+ row.push(cell);if(row.some(v=>v.trim()))out.push(row);return out;
+}
+function normHead(v){return String(v||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z0-9]/g,'')}
+function parseBankDate(v){const s=String(v||'').trim();let m=s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/);if(m)return m[1]+'-'+m[2].padStart(2,'0')+'-'+m[3].padStart(2,'0');m=s.match(/^(\d{1,2})[./-](\d{1,2})[./-](\d{4})/);if(m)return m[3]+'-'+m[2].padStart(2,'0')+'-'+m[1].padStart(2,'0');return ''}
+function parseBankAmount(v){let s=String(v??'').trim().replace(/[^0-9,.-]/g,'');if(!s)return 0;if(s.includes(',')&&s.includes('.'))s=s.lastIndexOf(',')>s.lastIndexOf('.')?s.replace(/\./g,'').replace(',','.'):s.replace(/,/g,'');else if(s.includes(','))s=s.replace(',','.');const n=Number(s);return Number.isFinite(n)?Math.abs(n):0}
+function mapBankFile(text){
+ const matrix=csvRows(text);if(matrix.length<2)throw new Error('Fișierul nu conține rânduri de tranzacții.');
+ const heads=matrix[0].map(normHead),find=names=>heads.findIndex(h=>names.includes(h));
+ const dateI=find(['data','datavaluta','datatranzactie','datatranzactiei','transactiondate','bookingdate','valuedate']);
+ const descI=find(['descriere','detalii','explicatii','description','details','transactiondetails','detaliiplata']);
+ const debitI=find(['debit','sumaiesire','plata','withdrawal','debitamount']);
+ const creditI=find(['credit','sumaintrare','incasare','deposit','creditamount']);
+ const amountI=find(['suma','amount','valoare','transactionamount']);
+ const typeI=find(['tip','sens','operatiune','transactiontype','debitcredit']);
+ const counterI=find(['contraparte','beneficiar','platitor','ordonator','counterparty','payee','payer','merchant']);
+ const refI=find(['referinta','referintaoperatiunii','idtranzactie','transactionid','reference','nrdocument']);
+ if(dateI<0||descI<0||(debitI<0&&creditI<0&&amountI<0))throw new Error('Nu am recunoscut coloanele. CSV-ul trebuie să conțină data, descrierea și suma (sau debit/credit).');
+ const data=[];
+ for(let i=1;i<matrix.length;i++){
+  const row=matrix[i],date=parseBankDate(row[dateI]);if(!date)continue;
+  const desc=String(row[descI]||'').trim();let debit=debitI>=0?parseBankAmount(row[debitI]):0,credit=creditI>=0?parseBankAmount(row[creditI]):0;
+  if(debitI<0&&creditI<0){const amount=parseBankAmount(row[amountI]);const typ=String(typeI>=0?row[typeI]:'').toLowerCase();if(/debit|plata|iesire|withdraw|out/.test(typ)||String(row[amountI]||'').trim().startsWith('-'))debit=amount;else credit=amount}
+  const isOut=debit>0&&credit===0;if(!isOut&&!(credit>0&&debit===0))continue;
+  const amount=isOut?debit:credit;if(!(amount>0))continue;
+  const counter=counterI>=0?String(row[counterI]||'').trim():'';
+  // Din extras importăm doar plățile către stații de carburant.
+  const merchantText=normHead(desc+' '+counter);
+  if(!isOut||!/(lukoil|petrom|omv|mol|rompetrol)/.test(merchantText))continue;
+  const ref=refI>=0?String(row[refI]||'').trim():'';
+  const raw=row.map(x=>String(x||'').trim()).join('|');
+  const key='bankcsv|'+(ref||date+'|plata|'+amount.toFixed(2)+'|'+raw);
+  data.push({data_operatiunii:date+'T12:00:00',tip:'plata',categorie:'Combustibil / auto',descriere:desc||counter||'Plată carburant',contraparte:counter||null,suma:amount,metoda_plata:'Card',document_tip:'Extras bancar',document_numar:ref||null,document_data:date,sursa:'extras_bancar',cheie_sursa:key,stare_verificare:'in_asteptare',deductibilitate_pct:50,note:'Plată către stație de carburant. Asociază bonul fiscal și verifică deductibilitatea.'});
+ }
+ return data;
+}
+let pendingBank=[];
+function btMoney(v){const s=String(v||'').replace(/[^0-9,.-]/g,'').replace(/,/g,'');const n=Number(s);return Number.isFinite(n)?Math.abs(n):0}
+function btDate(v){const m=String(v||'').match(/(\d{2})\/(\d{2})\/(\d{4})/);return m?m[3]+'-'+m[2]+'-'+m[1]:''}
+function btNorm(v){return String(v||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z0-9]/g,'')}
+async function mapBtPdf(buffer,password=""){
+ if(!window.pdfjsLib)throw new Error('Biblioteca PDF nu s-a încărcat. Reîncarcă pagina și încearcă din nou.');
+ pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+ const pdf=await pdfjsLib.getDocument({data:new Uint8Array(buffer),password:password||undefined}).promise;
+ let inCurrent=false,ops=[];
+ for(let pn=1;pn<=pdf.numPages;pn++){
+  const page=await pdf.getPage(pn),tc=await page.getTextContent(),items=tc.items.filter(x=>x.str&&x.str.trim()).map(x=>({x:x.transform[4],y:x.transform[5],s:x.str.trim()}));
+  const pageText=items.map(x=>x.s).join(' ');
+  if(/CONT\s+107RONPOS/i.test(pageText))inCurrent=false;
+  if(/CONT\s+107RONCRT/i.test(pageText))inCurrent=true;
+  if(!inCurrent)continue;
+  const sorted=items.sort((a,b)=>b.y-a.y||a.x-b.x),lines=[];
+  for(const it of sorted){let line=lines.find(l=>Math.abs(l.y-it.y)<1.8);if(!line){line={y:it.y,items:[]};lines.push(line)}line.items.push(it)}
+  lines.sort((a,b)=>b.y-a.y);
+  const starts=[];let currentDate='';
+  for(let li=0;li<lines.length;li++){
+   const line=lines[li],its=line.items.sort((a,b)=>a.x-b.x),txt=its.map(x=>x.s).join(' ');
+   const dateText=its.filter(x=>x.x<75).map(x=>x.s).join(' '),dateMatch=dateText.match(/(\d{2}\/\d{2}\/\d{4})/);if(dateMatch)currentDate=btDate(dateMatch[1]);
+   if(/RULAJ|SOLD|TOTAL DISPONIBIL|Fonduri proprii|Credit neutilizat|Data\s+Descriere/i.test(txt)||/BANCA TRANSILVANIA|Acest extras de cont|Info clienti|www\.bancatransilvania/i.test(txt))continue;
+   const descItems=its.filter(x=>x.x>=75&&x.x<430);
+   const desc=descItems.map(x=>x.s).join(' ').trim();
+   const amountItems=its.filter(x=>x.x>=430&&/^-?[\d,]+\.\d{2}$/.test(x.s.replace(/\s/g,'')));
+   if(!desc||!amountItems.length)continue;
+   const debit=amountItems.filter(x=>x.x<520).map(x=>btMoney(x.s)).reduce((a,b)=>a+b,0);
+   const credit=amountItems.filter(x=>x.x>=520).map(x=>btMoney(x.s)).reduce((a,b)=>a+b,0);
+   if((debit>0)===(credit>0))continue;
+   const date=currentDate;if(!date)continue;
+   starts.push({li,date,desc,tip:debit>0?'plata':'incasare',suma:debit>0?debit:credit});
+  }
+  for(let si=0;si<starts.length;si++){
+   const st=starts[si],detail=[st.desc];
+   for(let li=st.li+1;li<(starts[si+1]?.li??lines.length);li++){
+    const line=lines[li],txt=line.items.sort((a,b)=>a.x-b.x).filter(x=>x.x>=75&&x.x<430).map(x=>x.s).join(' ').trim();
+    if(!txt||/RULAJ|SOLD|TOTAL DISPONIBIL|Fonduri proprii|Credit neutilizat|BANCA TRANSILVANIA|Acest extras de cont|Info clienti|www\.bancatransilvania/i.test(txt))continue;
+    detail.push(txt);
+   }
+   const descr=detail.join(' ').replace(/\s+/g,' ').trim(),ref=(descr.match(/REF:\s*([A-Z0-9]+)/i)||[])[1]||'';
+   const fuel=/\b(OMV|LUKOIL|PETROM|MOL|ROMPETROL)\b/i.test(descr);
+   // Nu importăm încasări sau alte plăți din extras.
+   if(st.tip!=='plata'||!fuel)continue;
+   const loan=/imprumut|creditare/i.test(descr);
+   const isPos=/Plata la POS|Plata la POS non-BT|Data entry carduri/i.test(st.desc);
+   const method=isPos?'Card':'Transfer bancar';
+   const category=loan?'Alte încasări – de verificat':fuel?'Combustibil / auto':st.tip==='incasare'?'Alte venituri':'Alte cheltuieli – de verificat';
+   const note=[fuel?'Posibil combustibil; verifică bonul fiscal și deductibilitatea.':'',loan?'Descrierea indică împrumut/creditare; nu îl considera automat venit din activitate.':'','Extras BT Go · cont curent · pagina '+pn,ref?'Referință bancară: '+ref:''].filter(Boolean).join(' ');
+   ops.push({data_operatiunii:st.date+'T12:00:00',tip:st.tip,categorie,descriere:descr,contraparte:null,suma:st.suma,metoda_plata:method,document_tip:'Extras bancar',document_numar:ref||null,document_data:st.date,sursa:'extras_bancar',cheie_sursa:'BT|RO56BTRLRONCRT0587888101|'+(ref||st.date+'|'+st.tip+'|'+st.suma.toFixed(2)+'|'+btNorm(st.desc)),stare_verificare:'in_asteptare',deductibilitate_pct:fuel?50:0,note});
+  }
+ }
+ if(!ops.length)throw new Error('Nu am găsit plăți către Lukoil, Petrom, OMV, MOL sau Rompetrol. Nicio altă tranzacție nu a fost importată.');
+ return ops;
+}
+
+function findOblioMatch(bank){
+ const d=bank.data_operatiunii.slice(0,10),desc=btNorm(bank.descriere);
+ const candidates=all.filter(x=>x.sursa==='oblio'&&x.tip===bank.tip&&Math.abs(Number(x.suma)-Number(bank.suma))<0.005&&String(x.data_operatiunii||'').slice(0,10)===d);
+ const strong=candidates.filter(x=>{
+  const invoice=btNorm((x.document_serie||'')+(x.document_numar||''));
+  const client=btNorm(x.contraparte||'');
+  return (invoice.length>2&&desc.includes(invoice))||(client.length>5&&desc.includes(client));
+ });
+ if(strong.length===1)return strong[0];
+ if(strong.length>1)return null;
+ if(/^Data entry carduri/i.test(bank.descriere)&&candidates.length===1)return candidates[0];
+ return null;
+}
+$('bankPdfBtn').addEventListener('click',()=>$('bankPdf').click());
+$('bankPdf').addEventListener('change',async e=>{
+ const file=e.target.files?.[0];if(!file)return;
+ try{
+  $('listMsg').className='message';$('listMsg').textContent='Se citește extrasul BT Go PDF…';
+  const parsed=await mapBtPdf(await file.arrayBuffer());
+  const existingKeys=new Set(all.filter(x=>x.sursa==='extras_bancar'&&x.cheie_sursa).map(x=>x.cheie_sursa));
+  const matches=parsed.map(x=>({row:x,duplicate:existingKeys.has(x.cheie_sursa),oblio:findOblioMatch(x)}));
+  pendingBank=parsed;
+  const incoming=parsed.filter(x=>x.tip==='incasare').reduce((s,x)=>s+x.suma,0),outgoing=parsed.filter(x=>x.tip==='plata').reduce((s,x)=>s+x.suma,0);
+  const sample=matches.slice(0,14).map(x=>esc(x.row.data_operatiunii.slice(0,10))+' · '+esc(x.row.tip)+' · '+esc(x.row.descriere.slice(0,95))+' · '+money(x.row.suma)+(x.duplicate?' · deja importată':x.oblio?' · asociată cu Oblio':'')).join('<br>');
+  $('listMsg').className='message success';
+  $('listMsg').innerHTML='<strong>Previzualizare — doar plăți carburant din BT Go, nu s-a salvat nimic</strong><br>Cont curent: RO56…8101 · Tranzacții: '+parsed.length+' · Încasări: '+money(incoming)+' · Plăți: '+money(outgoing)+'<br>Potriviri Oblio: '+matches.filter(x=>x.oblio).length+' · Dubluri exacte: '+matches.filter(x=>x.duplicate).length+'<div style="margin-top:7px;line-height:1.8">'+sample+'</div><div class="actions"><button class="btn" id="confirmBtPdf" type="button">Confirmă importul extrasului</button><button class="btn secondary" id="cancelBtPdf" type="button">Renunță</button></div><div class="muted">Se citește doar contul curent; subcontul POS este exclus pentru a evita dublarea decontărilor. Încasările care apar și în Oblio trebuie verificate înainte de listarea registrului.</div>';
+  $('confirmBtPdf').addEventListener('click',async()=>{
+   const b=$('confirmBtPdf');b.disabled=true;
+   try{
+    // Parserul BT păstrează exclusiv plățile către stații de carburant; includem atât POS/card, cât și transfer bancar.
+    const fresh=pendingBank.filter(x=>!existingKeys.has(x.cheie_sursa)&&x.tip==='plata');
+    let inserted=0;
+    for(let i=0;i<fresh.length;i+=100){const batch=fresh.slice(i,i+100),r=await sb.from('operatiuni_financiare').insert(batch);if(r.error)throw r.error;inserted+=batch.length}
+    const skipped=parsed.length-fresh.length;
+    $('listMsg').className='message success';$('listMsg').textContent='Import carburant finalizat: '+inserted+' plăți către stații de carburant adăugate; '+skipped+' tranzacții excluse. Nu s-au importat încasări sau alte plăți.';
+    pendingBank=[];await load();
+   }catch(err){$('listMsg').className='message error';$('listMsg').textContent='Importul BT Go a eșuat: '+(err.message||err)}
+   finally{b.disabled=false}
+  });
+  $('cancelBtPdf').addEventListener('click',()=>{pendingBank=[];$('listMsg').textContent='Import anulat.'});
+ }catch(err){pendingBank=[];$('listMsg').className='message error';$('listMsg').textContent='Nu am putut citi extrasul BT Go: '+(err.message||err)}
+ e.target.value='';
+});
+$('bankFileBtn').addEventListener('click',()=>$('bankFile').click());
+$('bankFile').addEventListener('change',async e=>{
+ const file=e.target.files?.[0];if(!file)return;
+ try{
+  const parsed=mapBankFile(await file.text());if(!parsed.length)throw new Error('Nu am găsit tranzacții cu sume și date valide.');
+  pendingBank=parsed;
+  const total=parsed.reduce((s,x)=>s+(x.tip==='incasare'?x.suma:-x.suma),0);
+  const sample=parsed.slice(0,8).map(x=>esc(x.data_operatiunii.slice(0,10))+' · '+esc(x.tip)+' · '+esc(x.descriere)+' · '+money(x.suma)).join('<br>');
+  $('listMsg').className='message success';
+  $('listMsg').innerHTML='<strong>Previzualizare — doar plăți carburant, nu s-a salvat nimic</strong><br>Tranzacții recunoscute: '+parsed.length+' · Sold net al tranzacțiilor: '+money(total)+'<br><div style="margin-top:7px;line-height:1.8">'+sample+'</div><div class="actions"><button class="btn" id="confirmBankImport" type="button">Confirmă importul extrasului</button><button class="btn secondary" id="cancelBankImport" type="button">Renunță</button></div>';
+  $('confirmBankImport').addEventListener('click',async()=>{
+   const b=$('confirmBankImport');b.disabled=true;try{
+    const session=(await sb.auth.getSession()).data?.session;if(!session)throw new Error('Sesiunea a expirat.');
+    const seen=new Set();for(let k=0;k<pendingBank.length;k+=100){const keys=pendingBank.slice(k,k+100).map(x=>x.cheie_sursa),existing=await sb.from('operatiuni_financiare').select('cheie_sursa').eq('sursa','extras_bancar').in('cheie_sursa',keys);if(existing.error)throw existing.error;(existing.data||[]).forEach(x=>seen.add(x.cheie_sursa));}
+    const matched=pendingBank.map(x=>({row:x,oblio:findOblioMatch(x)})).filter(x=>x.oblio&&!seen.has(x.row.cheie_sursa));
+    for(const item of matched){const oldNote=String(item.oblio.note||''),extra='Potrivire extras bancar'+(item.row.document_numar?' · REF '+item.row.document_numar:'')+'.';const note=oldNote.includes(extra)?oldNote:(oldNote?oldNote+' ':'')+extra;const upd=await sb.from('operatiuni_financiare').update({metoda_plata:item.row.metoda_plata,note}).eq('id',item.oblio.id);if(upd.error)throw upd.error;}
+    const matchedKeys=new Set(matched.map(x=>x.row.cheie_sursa));const fresh=pendingBank.filter(x=>!seen.has(x.cheie_sursa)&&!matchedKeys.has(x.cheie_sursa)&&x.tip==='plata');
+    let inserted=0;for(let i=0;i<fresh.length;i+=100){const batch=fresh.slice(i,i+100),result=await sb.from('operatiuni_financiare').insert(batch);if(result.error)throw result.error;inserted+=batch.length}
+    $('listMsg').className='message success';$('listMsg').textContent='Import extras finalizat: '+matched.length+' operațiuni regăsite în Oblio (fără dublare); '+inserted+' plăți cu cardul adăugate separat; '+(pendingBank.length-matched.length-inserted)+' alte tranzacții excluse.';pendingBank=[];await load();
+   }catch(err){$('listMsg').className='message error';$('listMsg').textContent='Importul extrasului a eșuat: '+(err.message||err)}finally{b.disabled=false}
+  });
+  $('cancelBankImport').addEventListener('click',()=>{pendingBank=[];$('listMsg').textContent='Import anulat.'});
+ }catch(err){pendingBank=[];$('listMsg').className='message error';$('listMsg').textContent='Nu am putut citi extrasul: '+(err.message||err)}
+ e.target.value='';
+});
+
+
+
+function oblioReportMoney(v){const n=Number(String(v||'').replace(/\s/g,'').replace(',','.'));return Number.isFinite(n)?Math.abs(n):0}
+function oblioReportNorm(v){return String(v||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z0-9]/g,'')}
+async function parseOblioReportPdf(buffer){
+ if(!window.pdfjsLib)throw new Error('Biblioteca PDF nu s-a încărcat. Reîncarcă pagina și încearcă din nou.');
+ pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+ const pdf=await pdfjsLib.getDocument({data:new Uint8Array(buffer)}).promise;
+ const out=[];let periodStart='',periodEnd='',totalRows=0;
+ for(let pn=1;pn<=pdf.numPages;pn++){
+  const page=await pdf.getPage(pn),tc=await page.getTextContent();
+  const items=tc.items.filter(x=>x.str&&x.str.trim()).map(x=>({x:x.transform[4],y:x.transform[5],s:x.str.trim()}));
+  const pageText=items.map(x=>x.s).join(' ');
+  const pm=pageText.match(/(\d{2}\.\d{2}\.\d{4})\s*-\s*(\d{2}\.\d{2}\.\d{4})/);
+  if(pm){const cv=v=>v.slice(6,10)+'-'+v.slice(3,5)+'-'+v.slice(0,2);periodStart=cv(pm[1]);periodEnd=cv(pm[2]);}
+  const lines=[];
+  for(const it of items){
+   let line=lines.find(l=>Math.abs(l.y-it.y)<1.8);
+   if(!line){line={y:it.y,items:[]};lines.push(line)}
+   line.items.push(it);
+  }
+  lines.sort((a,b)=>b.y-a.y);
+  const starts=[];
+  for(let i=0;i<lines.length;i++){
+   const line=lines[i],dateBits=line.items.filter(x=>x.x>=375&&x.x<435).sort((a,b)=>a.x-b.x).map(x=>x.s).join('');
+   if(/^\d{2}\.\d{2}\.202$/.test(dateBits)||/^\d{2}\.\d{2}\.\d{4}$/.test(dateBits))starts.push({y:line.y,dateBits});
+  }
+  for(let ri=0;ri<starts.length;ri++){
+   const st=starts[ri],nextY=ri+1<starts.length?starts[ri+1].y:st.y-30;
+   const block=items.filter(x=>x.y<=st.y+10&&x.y>nextY+10);
+   const col=(a,b)=>block.filter(x=>x.x>=a&&x.x<b).sort((a,b)=>a.y-b.y||a.x-b.x).map(x=>x.s);
+   const dateTokens=col(375,435);
+   const fullDate=dateTokens.find(x=>/^\d{2}\.\d{2}\.\d{4}$/.test(x));
+   const partialDate=dateTokens.find(x=>/^\d{2}\.\d{2}\.202$/.test(x));
+   const dateText=fullDate||(partialDate?partialDate+(dateTokens.includes('6')?'6':''):'');
+   const dm=dateText.match(/(\d{2})\.(\d{2})\.(\d{4})/);
+   if(!dm)continue;
+   const date=dm[3]+'-'+dm[2]+'-'+dm[1];
+   const nameParts=col(60,305).filter(x=>!/^RO?\d{6,}$/i.test(x)&&!/^\d{6,}$/.test(x));
+   const counterparty=nameParts.join(' ').replace(/\s+/g,' ').trim();
+   const docParts=col(435,525),docText=docParts.join(' ').replace(/\s+/g,' ').trim();
+   let method='';
+   if(/bon\s*fiscal/i.test(docText))method='Bon fiscal';
+   else if(/chitan[țt]a/i.test(docText))method='Chitanță';
+   else if(/\bcard\b/i.test(docText))method='Card';
+   else if(/ordin\s+de\s+plat[ăa]/i.test(docText))method='Ordin de plată';
+   else method='Document Oblio';
+   const methodRx=/bon\s*fiscal|chitan[țt]a|card|ordin\s+de\s+plat[ăa]/i;
+   const docNumber=docText.replace(methodRx,'').trim();
+   const amounts=[
+    {type:'incasare',method:'Banca',v:oblioReportMoney(col(550,615).join(''))},
+    {type:'incasare',method:'Numerar',v:oblioReportMoney(col(615,680).join(''))},
+    {type:'plata',method:'Banca',v:oblioReportMoney(col(680,745).join(''))},
+    {type:'plata',method:'Numerar',v:oblioReportMoney(col(745,835).join(''))}
+   ].filter(x=>x.v>0);
+   if(!amounts.length)continue;
+   // Importăm toate încasările din raport (numerar și bancă), plus plățile în numerar.
+   // Încasările deja preluate prin API sunt eliminate ulterior prin potrivire; plățile bancare rămân în fluxul extrasului bancar.
+   const reportRows=amounts.filter(x=>x.type==='incasare'||(x.type==='plata'&&x.method==='Numerar'));
+   for(const a of reportRows){
+    const methodValue=a.method;
+    const isReceipt=a.type==='incasare';
+    const key=['oblio_report',date,oblioReportNorm(counterparty),oblioReportNorm(docNumber),a.type,methodValue,a.v.toFixed(2)].join('|');
+    out.push({
+     data_operatiunii:date+'T12:00:00',
+     tip:a.type,
+     categorie:isReceipt?'Servicii și intervenții':(method==='Bon fiscal'?'Bonuri fiscale / cumpărături fără factură SPV':'Alte cheltuieli'),
+     descriere:(isReceipt?'Încasare ':'Plată ')+(counterparty||'operațiune Oblio')+(docNumber?' · '+docNumber:'')+' · '+method,
+     contraparte:counterparty||null,
+     suma:a.v,
+     metoda_plata:methodValue,
+     document_tip:method,
+     document_numar:docNumber||null,
+     document_data:date,
+     sursa:'oblio_raport',
+     cheie_sursa:key,
+     deductibilitate_pct:0,
+     note:'Import din Raportul Oblio Încasări și plăți · pagina '+pn
+    });
+   }
+  }
+  totalRows+=starts.length;
+ }
+ if(!out.length)throw new Error('Nu am identificat încasări sau plăți în numerar în raportul Oblio. Verifică raportul Încasări și plăți.');
+ return {rows:out,periodStart,periodEnd,pages:pdf.numPages};
+}
+function findExistingOperation(candidate){
+ const norm=oblioReportNorm,bank=m=>/card|banc|ordin|transfer|virament/i.test(String(m||''))?'bank':/numerar|cash|chitan/i.test(String(m||''))?'cash':'';
+ const party=norm(candidate.contraparte);
+ if(!party)return null;
+ const matches=all.filter(x=>x.tip===candidate.tip&&Math.abs(Number(x.suma)-Number(candidate.suma))<0.005&&String(x.data_operatiunii||'').slice(0,10)===candidate.data_operatiunii.slice(0,10)&&norm(x.contraparte)===party&&bank(x.metoda_plata)===bank(candidate.metoda_plata)&&bank(candidate.metoda_plata)!=='');
+ return matches.length===1?matches[0]:null;
+}
+$('oblioReportBtn').addEventListener('click',()=>$('oblioReportFile').click());
+$('oblioReportFile').addEventListener('change',async e=>{
+ const file=e.target.files?.[0];if(!file)return;
+ try{
+  $('listMsg').className='message';$('listMsg').textContent='Se citește raportul Oblio PDF…';
+  const parsed=await parseOblioReportPdf(await file.arrayBuffer());
+  const seen=new Set(all.filter(x=>x.sursa==='oblio_raport'&&x.cheie_sursa).map(x=>x.cheie_sursa));
+  const rows=parsed.rows.map(x=>({...x,existing:seen.has(x.cheie_sursa),matched:findExistingOperation(x)}));
+  const fresh=rows.filter(x=>!x.existing&&!x.matched);
+  const incoming=fresh.filter(x=>x.tip==='incasare').reduce((s,x)=>s+x.suma,0),outgoing=fresh.filter(x=>x.tip==='plata').reduce((s,x)=>s+x.suma,0);
+  const duplicates=rows.filter(x=>x.existing||x.matched).length;
+  const sample=rows.slice(0,12).map(x=>esc(x.data_operatiunii.slice(0,10))+' · '+esc(x.tip)+' · '+esc(x.contraparte||'—')+' · '+money(x.suma)+' · '+esc(x.metoda_plata)+(x.existing?' · deja importată':x.matched?' · regăsită în registru':'')).join('<br>');
+  $('listMsg').className='message success';
+  $('listMsg').innerHTML='<strong>Previzualizare raport Oblio — nu s-a salvat nimic</strong><br>Perioadă: '+esc(parsed.periodStart||'necunoscută')+' – '+esc(parsed.periodEnd||'necunoscută')+' · Pagini: '+parsed.pages+' · Operațiuni citite: '+rows.length+'<br>Încasări noi: '+money(incoming)+' · Plăți noi: '+money(outgoing)+' · Duplicate/potriviri: '+duplicates+'<div style="margin-top:7px;line-height:1.8">'+sample+'</div><div class="actions"><button class="btn" id="confirmOblioReport" type="button">Confirmă importul raportului</button><button class="btn secondary" id="cancelOblioReport" type="button">Renunță</button></div><div class="muted">Se importă încasările din raport (numerar și bancă) și plățile în numerar. Încasările deja existente sunt potrivite pentru a evita dublarea; plățile bancare rămân în fluxul extrasului bancar. Verifică previzualizarea înainte de confirmare.</div>';
+  $('confirmOblioReport').addEventListener('click',async()=>{
+   const b=$('confirmOblioReport');b.disabled=true;
+   try{
+    const keys=new Set(all.filter(x=>x.sursa==='oblio_raport'&&x.cheie_sursa).map(x=>x.cheie_sursa));
+    const insertRows=[];
+    for(const x of parsed.rows){if(keys.has(x.cheie_sursa)||findExistingOperation(x))continue;keys.add(x.cheie_sursa);insertRows.push(x);}
+    let inserted=0;
+    for(let i=0;i<insertRows.length;i+=100){const batch=insertRows.slice(i,i+100),r=await sb.from('operatiuni_financiare').insert(batch);if(r.error)throw r.error;inserted+=batch.length;}
+    $('listMsg').className='message success';$('listMsg').textContent='Import Oblio finalizat: '+inserted+' operațiuni noi; '+(parsed.rows.length-inserted)+' duplicate/potriviri ignorate. Perioada: '+(parsed.periodStart||'—')+' – '+(parsed.periodEnd||'—')+'.';
+    await load();
+   }catch(err){$('listMsg').className='message error';$('listMsg').textContent='Importul raportului Oblio a eșuat: '+(err.message||err);}
+  });
+  $('cancelOblioReport').addEventListener('click',()=>{$('listMsg').textContent='Import anulat.';});
+ }catch(err){$('listMsg').className='message error';$('listMsg').textContent='Nu am putut citi raportul Oblio: '+(err.message||err);}
+ e.target.value='';
+});
+
+function printJournal(){
+ const pending=filtered().filter(x=>(x.stare_verificare||'confirmata')==='in_asteptare');
+ const rows=filtered().filter(x=>(x.stare_verificare||'confirmata')!=='exclusa').slice().sort((a,b)=>new Date(a.data_operatiunii)-new Date(b.data_operatiunii));
+ const f=getFilters(),dateFmt=v=>{const d=new Date(v);return Number.isNaN(d.getTime())?'':d.toLocaleDateString('ro-RO')};
+ const methodType=v=>{const m=String(v||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z0-9 ]/g,' ').replace(/\s+/g,' ').trim();if(!m)return 'unknown';if(/numerar|cash|chitanta|bon fiscal/.test(m))return 'cash';if(/banca|bank|card|pos|ordin de plata|transfer|virament|op transfer/.test(m))return 'bank';return 'unknown'};
+ const shortDoc=x=>{
+  const src=String(x.sursa||''),type=String(x.document_tip||'');
+  if(src==='extras_bancar'||src==='extras_bancar_pdf'||src==='extras_bancar_csv')return 'Extras bancar';
+  if(src==='oblio_raport'&&/^[a-f0-9]{24,}$/i.test(String(x.document_numar||'')))return 'Raport Oblio';
+  const bits=[x.document_serie,x.document_numar].filter(Boolean).join(' ');
+  if(bits)return bits.length>34?bits.slice(0,31)+'…':bits;
+  if(type)return type;
+  if(src.includes('oblio'))return 'Document Oblio';
+  return '—';
+ };
+ const shortExplanation=x=>{
+  let category=String(x.categorie||'').trim();
+  // Repair legacy imports where a JS object was accidentally stored as JSON text.
+  if(/^\\{\\s*"0"\\s*:/.test(category))category='';
+  const desc=String(x.descriere||'').normalize('NFD').replace(/[\\u0300-\\u036f]/g,'').toLowerCase();
+  if(!category){
+   if(/imprumut|creditare/.test(desc))category='Împrumut / transfer personal – de verificat';
+   else if(/comision|mentenanta pos/.test(desc))category='Comisioane bancare';
+   else if(/omv|lukoil|petrom|mol|rompetrol|combustibil/.test(desc))category='Combustibil';
+   else if(/vodafone|orange|telekom|digi|internet/.test(desc))category='Telefon / internet';
+   else if(/dedeman|brico|leroy|materiale|electra|resel/.test(desc))category='Materiale';
+   else if(/incasare|modernizare|interfon|factura se/.test(desc))category='Servicii și intervenții';
+   else category=x.tip==='incasare'?'Alte încasări – de verificat':'Alte cheltuieli – de verificat';
+  }
+  const compact={
+   'Servicii și intervenții':'Servicii și intervenții','Materiale și consumabile':'Materiale',
+   'Bonuri fiscale / cumpărături fără factură SPV':'Materiale / cumpărături','Combustibil / auto':'Combustibil',
+   'Reparații și întreținere auto':'Întreținere auto','Telefon și internet':'Telefon / internet',
+   'Unelte și echipamente':'Unelte / echipamente','Servicii profesionale':'Servicii profesionale',
+   'Comisioane bancare':'Comisioane bancare','Taxe și impozite':'Taxe și impozite',
+   'Modernizare interfon':'Modernizare interfon','Instalări':'Instalări','Alte venituri':'Alte venituri',
+   'Alte cheltuieli':'Alte cheltuieli'
+  };
+  return compact[category]||category;
+ };
+ const totals={inCash:0,inBank:0,outCash:0,outBank:0},unknown=[];
+ const body=rows.map((x,i)=>{
+  const cash=methodType(x.metoda_plata),amount=Number(x.suma)||0,isIn=x.tip==='incasare';let vals=['','','',''];
+  if(cash==='cash'){if(isIn){totals.inCash+=amount;vals[0]=money(amount)}else{totals.outCash+=amount;vals[2]=money(amount)}}
+  else if(cash==='bank'){if(isIn){totals.inBank+=amount;vals[1]=money(amount)}else{totals.outBank+=amount;vals[3]=money(amount)}}
+  else unknown.push(x);
+  const status=(x.stare_verificare||'confirmata')==='in_asteptare'?'DE VERIFICAT':(x.stare_verificare||'confirmata')==='asociata'?'DOCUMENT ASOCIAT':'CONFIRMATĂ';
+  return '<tr'+((x.stare_verificare||'confirmata')==='in_asteptare'?' style="background:#fff7ed"':'')+'><td class="center">'+(i+1)+'</td><td class="center">'+esc(dateFmt(x.data_operatiunii))+'</td><td>'+esc(shortDoc(x))+'</td><td>'+esc(shortExplanation(x))+'</td>'+vals.map(v=>'<td class="num">'+(v||'')+'</td>').join('')+'<td class="center">'+status+'</td></tr>';
+ }).join('');
+ if(unknown.length){
+  $('listMsg').className='message error';
+  $('listMsg').textContent='Tipărirea a fost oprită: '+unknown.length+' operațiuni nu au metodă de încasare/plată clară. Completează metoda pentru fiecare (Numerar sau Card/Transfer bancar), apoi încearcă din nou. Nicio sumă nu va fi ascunsă din totaluri.';
+  return;
+ }
+ $('listMsg').className='message';
+ $('listMsg').textContent='';
+ const totalIn=totals.inCash+totals.inBank,totalOut=totals.outCash+totals.outBank;
+ const period=(f.from?dateFmt(f.from):'început')+' – '+(f.to?dateFmt(f.to):'prezent');
+ const filterNote=(f.tip?'Filtru: '+(f.tip==='incasare'?'încasări':'plăți')+'. ':'')+(f.q?'Căutare: '+f.q+'. ':'');
+ $('printArea').innerHTML='<div class="print-head"><h1>'+(pending.length?'PREVIZUALIZARE RJIP – PENTRU VERIFICARE':'REGISTRUL-JURNAL DE ÎNCASĂRI ȘI PLĂȚI')+'</h1><div class="print-meta"><strong>GĂLĂȚANU CEZAR ÎNTREPRINDERE INDIVIDUALĂ</strong> · CUI 43594993<br>Perioada: '+esc(period)+'</div>'+(pending.length?'<div style="margin-top:8px;padding:8px;border:1px solid #c2410c;background:#fff7ed;color:#9a3412;font-weight:800">DOCUMENT PROVIZORIU – '+pending.length+' operațiuni, în valoare de '+money(pending.reduce((s,x)=>s+Number(x.suma||0),0))+' sunt încă de verificat. Nu folosi ca registru definitiv.</div>':'')+'</div><table><thead><tr><th style="width:5%">Nr.</th><th style="width:9%">Data</th><th style="width:12%">Document</th><th style="width:23%">Explicații</th><th style="width:10%">Încasări<br>numerar</th><th style="width:10%">Încasări<br>bancă</th><th style="width:10%">Plăți<br>numerar</th><th style="width:10%">Plăți<br>bancă</th><th style="width:11%">Stare</th></tr></thead><tbody>'+(body||'<tr><td colspan="9" class="center">Nu există operațiuni în perioada selectată.</td></tr>')+'</tbody><tfoot><tr><th colspan="4">TOTAL</th><th class="num">'+money(totals.inCash)+'</th><th class="num">'+money(totals.inBank)+'</th><th class="num">'+money(totals.outCash)+'</th><th class="num">'+money(totals.outBank)+'</th><th></th></tr></tfoot></table><div class="print-summary"><span>Total încasări: '+money(totalIn)+'</span><span>Total plăți: '+money(totalOut)+'</span><span>Sold perioadă: '+money(totalIn-totalOut)+'</span></div><div class="print-note">'+esc(filterNote)+(pending.length?'Include operațiuni în așteptare, evidențiate DE VERIFICAT. ':'')+(unknown.length?'Atenție: '+unknown.length+' operațiuni au metoda de plată neprecizată și necesită verificare.':'')+'</div><div class="page-number"></div>';
+ window.print();
+}
+$('printJournal').addEventListener('click',printJournal);
+$('printYear').addEventListener('click',()=>{const year=($('monthFilter').value||localInput().slice(0,7)).slice(0,4);$('from').value=year+'-01-01';$('to').value=year+'-12-31';$('monthStatus').textContent='Registru anual: '+year;render();printJournal();});
+$('export').addEventListener('click',()=>{const rows=filtered(),head=['Data','Tip','Categorie','Descriere','Contraparte','Suma','Metoda','Tip document','Serie','Numar document','Procent deductibil','Sursa'];const cell=v=>'"'+String(v??'').replace(/"/g,'""')+'"';const csv='\ufeff'+[head,...rows.map(x=>[x.data_operatiunii,x.tip,x.categorie,x.descriere,x.contraparte,x.suma,x.metoda_plata,x.document_tip,x.document_serie,x.document_numar,x.deductibilitate_pct,x.sursa])].map(r=>r.map(cell).join(';')).join('\r\n');const a=document.createElement('a'),url=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8'}));a.href=url;a.download='registru-jurnal.csv';a.click();URL.revokeObjectURL(url)});
+async function boot(){try{sb=window.supabaseClient||(window.supabase&&window.SE_CONFIG?window.supabase.createClient(window.SE_CONFIG.url,window.SE_CONFIG.anonKey):null);if(!sb)throw new Error('Configurația Supabase nu este disponibilă.');const session=(await sb.auth.getSession()).data?.session;if(!session){location.href='/';return}const role=(await sb.from('staff_users').select('role,active').eq('user_id',session.user.id).maybeSingle()).data;if(!role?.active||role.role!=='admin'){document.body.innerHTML='<div class="wrap"><div class="panel">Acces permis doar administratorului.</div></div>';return}$('data').value=localInput();const now=new Date(),month=now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0');fillCategories();await load();await selectMonth(month)}catch(e){$('rows').innerHTML='<tr><td colspan="10" class="empty error">'+esc(e.message)+'</td></tr>'}}
+boot();
+})();
+</script>
+</body></html>
