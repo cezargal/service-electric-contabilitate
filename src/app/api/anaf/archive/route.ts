@@ -46,7 +46,11 @@ export async function GET(request: NextRequest) {
         p_secret: secret, p_cif: cif, p_message_id: id,
       });
       if (error || !data) return NextResponse.json({ error: "Documentul XML nu a fost găsit în arhivă." }, { status: 404 });
-      return new NextResponse(data, { headers: {
+      const xml = String(data);
+      if (request.nextUrl.searchParams.get("view") === "1") {
+        return NextResponse.json({ success: true, id, xml, invoice: invoiceMetadata(xml) }, { headers: { "Cache-Control": "no-store" } });
+      }
+      return new NextResponse(xml, { headers: {
         "Content-Type": "application/xml; charset=utf-8",
         "Content-Disposition": `attachment; filename="SPV-${id}.xml"`,
         "Cache-Control": "no-store",
