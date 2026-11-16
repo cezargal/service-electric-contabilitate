@@ -1,6 +1,17 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 
+
+function readTag(xml: string, tag: string): string {
+  const pattern = new RegExp("<(?:[\\w.-]+:)?" + tag + "\\b[^>]*>([\\s\\S]*?)<\\/(?:[\\w.-]+:)?" + tag + "\\s*>", "i");
+  return (xml.match(pattern)?.[1] || "").replace(/<[^>]+>/g, " ").replace(/&amp;/g, "&").replace(/&lt;/g, "<").replace(/&gt;/g, ">").trim();
+}
+function invoiceMetadata(xml: string) {
+  const supplier = xml.match(/<(?:[\\w.-]+:)?AccountingSupplierParty\\b[\\s\\S]*?<\\/(?:[\\w.-]+:)?AccountingSupplierParty>/i)?.[0] || xml;
+  const amount = readTag(xml, "PayableAmount") || readTag(xml, "TaxInclusiveAmount");
+  return { supplier_name: readTag(supplier, "RegistrationName") || readTag(supplier, "Name") || null, invoice_number: readTag(xml, "ID") || null, invoice_date: readTag(xml, "IssueDate") || null, currency: readTag(xml, "DocumentCurrencyCode") || "RON", invoice_total: amount ? Number(amount.replace(",", ".")) : null };
+}
+
 async function getAuthorizedClient(request: NextRequest) {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
@@ -38,7 +49,8 @@ export async function GET(request: NextRequest) {
       p_secret: secret, p_cif: cif || null,
     });
     if (error) throw error;
-    return NextResponse.json({ success: true, documents: data || [] }, { headers: { "Cache-Control": "no-store" } });
+    const documents = await Promise.all((data || []).map(async (doc: any) => { if (!doc.has_xml) return doc; const { data: xml, error: xmlError } = await client.rpc("get_anaf_supplier_archive_xml", { p_secret: secret, p_cif: String(doc.cif || "").replace(/\\D/g, ""), p_message_id: String(doc.anaf_message_id || "") }); if (xmlError || !xml) return doc; return { ...doc, ...invoiceMetadata(String(xml)) }; }));
+    return NextResponse.json({ success: true, documents }, { headers: { "Cache-Control": "no-store" } });
   } catch (error: any) {
     return NextResponse.json({ error: error?.message || "Nu am putut accesa arhiva SPV." }, { status: 401 });
   }
