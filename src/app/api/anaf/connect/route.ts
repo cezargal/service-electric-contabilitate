@@ -17,8 +17,7 @@ export async function GET(request: NextRequest) {
   authorize.searchParams.set("client_id", clientId);
   authorize.searchParams.set("redirect_uri", redirectUri);
   authorize.searchParams.set("token_content_type", "jwt");
-  // ANAF cere ca scope și state să rămână necompletate în profilul OAuth.
-  // State-ul este folosit aici doar pentru protecția CSRF a sesiunii aplicației.
+  // ANAF: scope și state rămân necompletate, conform fluxului înrolat.
 
   const response = NextResponse.redirect(authorize);
   response.cookies.set("anaf_oauth_state", state, {
