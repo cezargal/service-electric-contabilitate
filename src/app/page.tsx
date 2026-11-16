@@ -21,12 +21,12 @@ export default function Home(){
  const [supplierPreview,setSupplierPreview]=useState<any>(null),[supplierPreviewLoading,setSupplierPreviewLoading]=useState(false),[courierReceipt,setCourierReceipt]=useState(""),[courierReceiptDate,setCourierReceiptDate]=useState(""),[supplierPaymentDate,setSupplierPaymentDate]=useState("");
  const [anafArchive,setAnafArchive]=useState<any[]>([]),[archiveLoading,setArchiveLoading]=useState(false),[archiveSearch,setArchiveSearch]=useState(""),[archiveBusyId,setArchiveBusyId]=useState(""),[archiveProgress,setArchiveProgress]=useState("");
  const [archiveInvoice,setArchiveInvoice]=useState<any>(null),[archiveInvoiceLoading,setArchiveInvoiceLoading]=useState(false),[archivePayments,setArchivePayments]=useState<any[]>([]);
- const [archivePayDate,setArchivePayDate]=useState(today()),[archivePayAmount,setArchivePayAmount]=useState(""),[archivePayMethod,setArchivePayMethod]=useState("banca"),[archivePayReference,setArchivePayReference]=useState(""),[archivePayNotes,setArchivePayNotes]=useState(""),[archivePaySaving,setArchivePaySaving]=useState(false);
+ const [archivePayDate,setArchivePayDate]=useState(""),[archivePayAmount,setArchivePayAmount]=useState(""),[archivePayMethod,setArchivePayMethod]=useState("banca"),[archivePayReference,setArchivePayReference]=useState(""),[archivePayNotes,setArchivePayNotes]=useState(""),[archivePaySaving,setArchivePaySaving]=useState(false);
  const [oblioEmail,setOblioEmail]=useState(""),[oblioSecret,setOblioSecret]=useState(""),[oblioCif,setOblioCif]=useState("43594993"),[oblioLoading,setOblioLoading]=useState(false),[oblioResult,setOblioResult]=useState<any>(null);
  const [oblioHistory,setOblioHistory]=useState<any>({documents:[],clients:0,collections:0});
  const [collectionDate,setCollectionDate]=useState(""),[collectionAmount,setCollectionAmount]=useState(""),[collectionMethod,setCollectionMethod]=useState("banca"),[collectionReference,setCollectionReference]=useState(""),[collectionNotes,setCollectionNotes]=useState(""),[collectionSaving,setCollectionSaving]=useState(false),[collectionKey,setCollectionKey]=useState("");
 
- useEffect(()=>{setDate(today());setCollectionDate(today())},[]);
+ useEffect(()=>{setDate(today());setCollectionDate(today());setArchivePayDate(today())},[]);
  useEffect(()=>{supabase.auth.getSession().then(({data})=>{setSession(data.session);setLoading(false)});const {data:{subscription}}=supabase.auth.onAuthStateChange((_e,s)=>setSession(s));return()=>subscription.unsubscribe()},[]);
  useEffect(()=>{if(session)loadData()},[session]);
  useEffect(()=>{if(session&&tab==="import")loadOblioHistory()},[session,tab]);
