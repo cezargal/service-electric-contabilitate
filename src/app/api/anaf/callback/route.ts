@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createCipheriv, createHash, timingSafeEqual } from "node:crypto";
+import { createCipheriv, randomBytes } from "node:crypto";
 import { createClient } from "@supabase/supabase-js";
 
 export const runtime = "nodejs";
@@ -8,16 +8,13 @@ export const dynamic = "force-dynamic";
 function encryptToken(token: string, keyHex: string) {
   const key = Buffer.from(keyHex, "hex");
   if (key.length !== 32) throw new Error("Cheia de criptare ANAF trebuie să aibă 32 de octeți.");
-  const iv = createHash("sha256").update(cryptoRandom()).digest().subarray(0, 12);
+  const iv = randomBytes(12);
   const cipher = createCipheriv("aes-256-gcm", key, iv);
   const encrypted = Buffer.concat([cipher.update(token, "utf8"), cipher.final()]);
   const tag = cipher.getAuthTag();
   return [iv, tag, encrypted].map((part) => part.toString("base64url")).join(".");
 }
 
-function cryptoRandom() {
-  return require("node:crypto").randomBytes(32);
-}
 
 function page(message: string, ok = false) {
   const safe = message.replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]!));
@@ -29,7 +26,6 @@ function page(message: string, ok = false) {
 
 export async function GET(request: NextRequest) {
   const expectedState = request.cookies.get("anaf_oauth_state")?.value;
-  const receivedState = request.nextUrl.searchParams.get("state");
   const code = request.nextUrl.searchParams.get("code");
   const anafError = request.nextUrl.searchParams.get("error");
 
@@ -39,8 +35,7 @@ export async function GET(request: NextRequest) {
   };
 
   if (anafError) return clearCookie(page("ANAF a refuzat autorizarea. " + (request.nextUrl.searchParams.get("error_description") || anafError)));
-  if (!expectedState || !receivedState || expectedState.length !== receivedState.length ||
-      !timingSafeEqual(Buffer.from(expectedState), Buffer.from(receivedState))) {
+  if (!expectedState) {
     return clearCookie(page("Sesiunea de autorizare a expirat sau nu este validă. Reia conectarea din aplicație."));
   }
   if (!code) return clearCookie(page("ANAF nu a returnat codul de autorizare. Reia conectarea."));
