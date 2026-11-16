@@ -179,7 +179,7 @@ export default function Home(){
  {tab==="preview"&&current&&<div className="panel">
   <div className="no-print" style={{display:"flex",justifyContent:"space-between",marginBottom:20}}>
    <button className="btn secondary" onClick={()=>setTab(current.isDraftPreview?"new":"invoices")}>{current.isDraftPreview?"← Înapoi la editare":"← Înapoi la facturi"}</button>
-   <div style={{display:"flex",gap:8}}>{current.isDraftPreview&&<button className="btn" onClick={issueInvoice}>Emite factura</button>}<button className="btn secondary" onClick={()=>window.print()}>Tipărește / Salvează PDF</button></div>
+   <div style={{display:"flex",gap:8}}>{current.isDraftPreview&&<button className="btn" onClick={issueInvoice}>Emite factura</button>}<button className="btn secondary" onClick={()=>window.print()}>Tipărește factura A4 / Salvează PDF</button></div>
   </div>
   {!current.isDraftPreview&&<div className="no-print panel" style={{marginBottom:18,border:"1px solid #cdd9e8"}}>
    <div style={{display:"flex",justifyContent:"space-between",gap:16,flexWrap:"wrap",alignItems:"center"}}>
@@ -190,12 +190,12 @@ export default function Home(){
     <div className="grid">
      <div className="field"><label>Data încasării</label><input type="date" value={collectionDate} onChange={e=>setCollectionDate(e.target.value)}/></div>
      <div className="field"><label>Sumă încasată (RON)</label><input type="number" min="0.01" max={Number(current.rest_de_plata??current.total??0)} step="0.01" value={collectionAmount} onChange={e=>setCollectionAmount(e.target.value)}/></div>
-     <div className="field"><label>Modalitate</label><select value={collectionMethod} onChange={e=>setCollectionMethod(e.target.value)}><option value="numerar">Numerar</option><option value="card">Card / POS</option><option value="banca">Transfer bancar</option></select></div>
-     <div className="field"><label>Referință / număr document (opțional)</label><input value={collectionReference} onChange={e=>setCollectionReference(e.target.value)} placeholder="Nr. extras, OP sau bon POS"/></div>
+     <div className="field"><label>Modalitate</label><select value={collectionMethod} onChange={e=>setCollectionMethod(e.target.value)}><option value="numerar">Cash / Numerar</option><option value="card">Card / POS</option><option value="banca">OP – Ordin de plată (transfer bancar)</option></select></div>
+     <div className="field"><label>Referință / număr document (opțional)</label><input value={collectionReference} onChange={e=>setCollectionReference(e.target.value)} placeholder="Nr. bon cash, bon POS sau OP"/></div>
     </div>
     <div className="field"><label>Observații (opțional)</label><input value={collectionNotes} onChange={e=>setCollectionNotes(e.target.value)}/></div>
     <button className="btn" disabled={collectionSaving} onClick={saveCollection}>{collectionSaving?"Se salvează…":"Înregistrează încasarea"}</button>
-    <p className="muted" style={{marginTop:8}}>Încasările parțiale se salvează separat, la data aleasă. Cardul/POS și transferul bancar se evidențiază pe fluxul bancar; numerarul rămâne distinct.</p>
+    <p className="muted" style={{marginTop:8}}>Alege metoda reală de plată: cash, card/POS sau OP. Încasările parțiale se păstrează separat, iar istoricul rămâne atașat facturii.</p>
    </div>}
    {(current.incasari||[]).length>0&&<div style={{marginTop:18}}><h3>Istoric încasări</h3><div className="scroll"><table className="table"><thead><tr><th>Data</th><th>Modalitate</th><th>Referință</th><th>Sumă</th></tr></thead><tbody>{current.incasari.map((p:any)=><tr key={p.id}><td>{p.data_incasarii}</td><td>{p.metoda==="numerar"?"Numerar":p.metoda==="card"?"Card / POS":"Transfer bancar"}</td><td>{p.referinta||"—"}</td><td>{money(Number(p.suma))}</td></tr>)}</tbody></table></div></div>}
   </div>}
