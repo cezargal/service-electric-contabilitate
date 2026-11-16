@@ -44,6 +44,29 @@ function extractXmlFromZip(zip: Buffer): string {
   return candidates.find((x) => /<\s*(?:[\w.-]+:)?(?:Invoice|CreditNote|CrossIndustryInvoice)\b/i.test(x)) || candidates[0];
 }
 
+function xmlValue(xml: string, tag: string): string {
+  const re = new RegExp("<(?:[\\w.-]+:)?"+tag+"\\b[^>]*>([\\s\\S]*?)<\\/(?:[\\w.-]+:)?"+tag+"\\s*>","i");
+  const match = xml.match(re);
+  return (match?.[1] || "").replace(/<[^>]+>/g," ").replace(/&amp;/g,"&").replace(/&lt;/g,"<").replace(/&gt;/g,">").replace(/&quot;/g,'"').replace(/&#39;/g,"'").replace(/\\s+/g," ").trim();
+}
+function parseInvoice(xml: string) {
+ const supplier = xml.match(/<(?:[\\w.-]+:)?AccountingSupplierParty\\b[\\s\\S]*?<\\/(?:[\\w.-]+:)?AccountingSupplierParty>/i)?.[0] || xml;
+ const supplierName = xmlValue(supplier,"RegistrationName") || xmlValue(supplier,"Name");
+ const supplierCif = xmlValue(supplier,"CompanyID");
+ const invoiceNumber = xmlValue(xml,"ID");
+ const invoiceDate = xmlValue(xml,"IssueDate");
+ const dueDate = xmlValue(xml,"DueDate");
+ const currency = xmlValue(xml,"DocumentCurrencyCode") || "RON";
+ const total = Number((xmlValue(xml,"PayableAmount") || xmlValue(xml,"TaxInclusiveAmount") || "0").replace(",","."));
+ const lines = [...xml.matchAll(/<(?:[\\w.-]+:)?InvoiceLine\\b[\\s\\S]*?<\\/(?:[\\w.-]+:)?InvoiceLine>/gi)].map(m=>({
+   description: xmlValue(m[0],"Name") || xmlValue(m[0],"Description") || "Articol",
+   quantity: xmlValue(m[0],"InvoicedQuantity"),
+   unitPrice: xmlValue(m[0],"PriceAmount"),
+   lineTotal: xmlValue(m[0],"LineExtensionAmount")
+ }));
+ return {supplierName,supplierCif,invoiceNumber,invoiceDate,dueDate,currency,total,lines};
+}
+
 export async function GET(request: NextRequest) {
   const cif = (request.nextUrl.searchParams.get("cif") || "").replace(/^RO/i, "").replace(/\D/g, "");
   const id = request.nextUrl.searchParams.get("id") || "";
@@ -76,6 +99,9 @@ export async function GET(request: NextRequest) {
     if (saveError || saved !== true) {
       console.error("ANAF XML save failed", saveError?.message || "message_not_found");
       return NextResponse.json({ error: "XML-ul a fost descărcat, dar nu a putut fi arhivat în aplicație." }, { status: 500 });
+    }
+    if (request.nextUrl.searchParams.get("view") === "1") {
+      return NextResponse.json({ success: true, id, invoice: parseInvoice(xml), xml }, { headers: { "Cache-Control": "no-store" } });
     }
     return new NextResponse(xml, { headers: {
       "Content-Type": "application/xml; charset=utf-8",
