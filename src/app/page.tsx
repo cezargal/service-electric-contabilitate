@@ -17,6 +17,7 @@ export default function Home(){
  const [newClient,setNewClient]=useState({denumire:"",cui:"",adresa:"",email:"",telefon:"",tip_client:"firma"});
  const [search,setSearch]=useState("");
  const [anafLoading,setAnafLoading]=useState(false),[anafMessage,setAnafMessage]=useState("");
+ const [supplierCif,setSupplierCif]=useState("43594993"),[supplierDays,setSupplierDays]=useState("30"),[supplierLoading,setSupplierLoading]=useState(false),[supplierMessages,setSupplierMessages]=useState<any[]>([]),[supplierStatus,setSupplierStatus]=useState("");
  const [oblioEmail,setOblioEmail]=useState(""),[oblioSecret,setOblioSecret]=useState(""),[oblioCif,setOblioCif]=useState("43594993"),[oblioLoading,setOblioLoading]=useState(false),[oblioResult,setOblioResult]=useState<any>(null);
  const [oblioHistory,setOblioHistory]=useState<any>({documents:[],clients:0,collections:0});
  const [collectionDate,setCollectionDate]=useState(""),[collectionAmount,setCollectionAmount]=useState(""),[collectionMethod,setCollectionMethod]=useState("banca"),[collectionReference,setCollectionReference]=useState(""),[collectionNotes,setCollectionNotes]=useState(""),[collectionSaving,setCollectionSaving]=useState(false),[collectionKey,setCollectionKey]=useState("");
@@ -29,6 +30,7 @@ export default function Home(){
  const totals=useMemo(()=>lines.reduce((a,l)=>{const net=Math.round(Number(l.cantitate||0)*Number(l.pret_unitar||0)*100)/100;const vat=0;return {net:a.net+net,vat:a.vat,total:a.total+net}},{net:0,vat:0,total:0}),[lines]);
  async function loadOblioHistory(){const {data,error}=await supabase.rpc("app_list_oblio_imports");if(!error&&data)setOblioHistory(data)}
  async function importOblio(){setError("");setNotice("");setOblioResult(null);if(!oblioEmail.trim()||!oblioSecret.trim()||!oblioCif.trim()){setError("Completează datele de conectare Oblio și CUI-ul firmei.");return}setOblioLoading(true);try{const {data:{session:activeSession}}=await supabase.auth.getSession();const response=await fetch("/api/import/oblio",{method:"POST",headers:{"Content-Type":"application/json","Authorization":`Bearer ${activeSession?.access_token||""}`},body:JSON.stringify({clientId:oblioEmail,clientSecret:oblioSecret,cif:oblioCif})});const data=await response.json();if(!response.ok)throw new Error(data.error||"Importul Oblio a eșuat.");const {data:stored,error:storeError}=await supabase.rpc("app_import_oblio",{p_clients:data.clients,p_documents:data.documents});if(storeError)throw new Error("Datele au fost citite din Oblio, dar salvarea a eșuat: "+storeError.message);setOblioResult({...data,stored});setOblioSecret("");setNotice("Importul Oblio s-a încheiat. Datele au fost salvate fără a emite facturi noi.");await loadData();}catch(e:any){setError(e.message||"Importul nu a putut fi finalizat.");}finally{setOblioLoading(false)}}
+ async function loadSupplierInvoices(){setSupplierLoading(true);setSupplierStatus("");setError("");try{const response=await fetch(`/api/anaf/invoices?cif=${encodeURIComponent(supplierCif)}&days=${supplierDays}`,{cache:"no-store"});const data=await response.json();if(!response.ok)throw new Error(data.error||"Preluarea facturilor din SPV a eșuat.");setSupplierMessages(data.messages||[]);setSupplierStatus(data.count?`ANAF a returnat ${data.count} mesaje de tip factură primită.`:"ANAF nu a găsit facturi primite în intervalul selectat.");}catch(e:any){setSupplierStatus(e.message||"Nu am putut prelua facturile.");}finally{setSupplierLoading(false)}}
  async function signIn(e:any){e.preventDefault();setError("");const {error}=await supabase.auth.signInWithPassword({email:loginEmail,password:loginPass});if(error)setError(error.message)}
  async function signOut(){await supabase.auth.signOut();setSession(null)}
  async function lookupAnaf(){const clean=cui.replace(/^RO/i,"").replace(/\\D/g,"");if(!clean)return;setAnafLoading(true);setAnafMessage("");try{const r=await fetch("/api/anaf/cui",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({cui:clean})});const d=await r.json();if(!r.ok)throw new Error(d.error||"Interogarea ANAF a eșuat.");setClientName(d.denumire||clientName);setReg(d.nrRegCom||reg);setAddress(d.adresa||address);setCui(d.cui||clean);setClientId("");setAnafMessage("Date preluate din ANAF. Verifică informațiile înainte de emitere.");}catch(e:any){setAnafMessage(e.message||"Nu am putut prelua datele.");}finally{setAnafLoading(false)}}
@@ -88,17 +90,22 @@ export default function Home(){
  <nav className="tabs no-print">{[["new","Factură nouă"],["invoices","Facturi emise"],["clients","Clienți"],["import","Import Oblio"],["spv","Facturi furnizori / SPV"],["rjip","Registru-jurnal"]].map(([v,l])=><button key={v} className={"tab "+(tab===v?"active":"")} onClick={()=>{setTab(v);setError("");setNotice("")}}>{l}</button>)}</nav>
  {tab==="spv"&&<section className="panel no-print">
   <h1>Facturi furnizori – ANAF SPV</h1>
-  <p className="muted">Conectează certificatul digital autorizat pentru CUI-ul întreprinderii individuale. După autorizare vom putea prelua XML-urile facturilor primite, le vom arhiva și le vom asocia plăților din registrul-jurnal fără să dublăm cheltuielile.</p>
+  <p className="muted">Certificatul ANAF este conectat. Preia facturile primite în SPV și verifică documentele înainte de asocierea lor cu plățile din registrul-jurnal.</p>
   <div className="panel" style={{background:"#f7f9fc",border:"1px solid #e3e8ef",marginTop:18}}>
-   <h2>Conectare securizată</h2>
-   <p className="muted">Se va deschide pagina ANAF pentru autentificarea cu certificatul Trans Sped. Alege certificatul autorizat și aprobă accesul pentru aplicația SERVICE ELECTRIC.</p>
-   <button className="btn" onClick={()=>window.location.assign("/api/anaf/connect")}>Conectează certificatul ANAF</button>
-   <p className="muted" style={{marginTop:12,fontSize:13}}>Tokenurile sunt salvate criptat pe server. Nu introduce aici PIN-ul și nu încărca fișierul certificatului.</p>
+   <h2><span style={{color:"#15803d"}}>● Conectat la ANAF</span></h2>
+   <div className="grid">
+    <div className="field"><label>CUI întreprinderii</label><input value={supplierCif} onChange={e=>setSupplierCif(e.target.value)} placeholder="CUI fără RO"/></div>
+    <div className="field"><label>Perioadă de căutare</label><select value={supplierDays} onChange={e=>setSupplierDays(e.target.value)}><option value="7">Ultimele 7 zile</option><option value="30">Ultimele 30 zile</option><option value="60">Ultimele 60 zile</option></select></div>
+   </div>
+   <button className="btn" disabled={supplierLoading} onClick={loadSupplierInvoices}>{supplierLoading?"Se caută în SPV…":"Preia facturile primite"}</button>
+   {supplierStatus&&<p className="muted" style={{marginTop:12}}>{supplierStatus}</p>}
   </div>
-  <div style={{marginTop:18}}>
-   <h2>Ce vom prelua</h2>
-   <ul><li>Facturile primite în SPV și fișierul XML original</li><li>Furnizor, CUI, număr, dată, scadență și totaluri</li><li>Asocierea documentului cu plata din bancă sau numerar</li><li>Înregistrarea cheltuielii în RJIP numai la plată, fără dubluri</li></ul>
-  </div>
+  {supplierMessages.length>0&&<div style={{marginTop:20}}>
+   <h2>Mesaje e-Factura primite</h2>
+   <div className="scroll"><table className="table"><thead><tr><th>Data</th><th>Furnizor (CUI)</th><th>Tip</th><th>Detalii</th><th>ID ANAF</th></tr></thead>
+   <tbody>{supplierMessages.map((m,i)=><tr key={m.id||i}><td>{m.date?new Date(m.date).toLocaleString("ro-RO"):"—"}</td><td>{m.supplierCif||"—"}</td><td>{m.type||"—"}</td><td>{m.details||"—"}</td><td>{m.id||"—"}</td></tr>)}</tbody></table></div>
+  </div>}
+  <p className="muted" style={{marginTop:18,fontSize:13}}>Documentele preluate nu generează automat cheltuieli în registrul-jurnal. Înregistrarea se va face numai după verificarea documentului și a plății.</p>
  </section>}
  {tab==="rjip"&&<section className="panel no-print" style={{padding:0,overflow:"hidden"}}><iframe title="Registru-jurnal" src="/registru-jurnal.html" onLoad={e=>{const frame=e.currentTarget;const doc=frame.contentDocument;if(!doc)return;const resize=()=>{frame.style.height=Math.max(doc.documentElement.scrollHeight,doc.body.scrollHeight)+"px"};resize();new ResizeObserver(resize).observe(doc.body);}} style={{display:"block",width:"100%",height:"1200px",border:0,background:"#f3f6fa"}}/></section>}
  {tab==="import"&&<>
