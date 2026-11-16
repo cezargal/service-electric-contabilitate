@@ -1,9 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { randomBytes } from "node:crypto";
 
-export const runtime = "nodejs";
-export const dynamic = "force-dynamic";
-
 export async function GET(request: NextRequest) {
   const clientId = process.env.ANAF_CLIENT_ID;
   const redirectUri = process.env.ANAF_REDIRECT_URI;
