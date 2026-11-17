@@ -2,31 +2,81 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 
 
+function decodeXml(value: string): string {
+  return value.replace(/<!\[CDATA\[([\s\S]*?)\]\]>/g, "$1")
+    .replace(/&#x([0-9a-f]+);/gi, (_, code) => String.fromCodePoint(parseInt(code, 16)))
+    .replace(/&#(\d+);/g, (_, code) => String.fromCodePoint(Number(code)))
+    .replace(/&amp;/g, "&").replace(/&lt;/g, "<").replace(/&gt;/g, ">")
+    .replace(/&quot;/g, '"').replace(/&apos;/g, "'").trim();
+}
+function tagMatch(xml: string, tag: string): RegExpMatchArray | null {
+  return xml.match(new RegExp("<(?:[\\\\w.-]+:)?"+tag+"(?:\\\\s[^>]*)?>([\\\\s\\\\S]*?)<\\\\/(?:[\\\\w.-]+:)?"+tag+"\\\\s*>", "i"));
+}
 function readTag(xml: string, tag: string): string {
-  const pattern = new RegExp(String.raw`<(?:[\w.-]+:)?${tag}\b[^>]*>([\s\S]*?)<\/(?:[\w.-]+:)?${tag}\s*>`, "i");
-  return (xml.match(pattern)?.[1] || "").replace(/<[^>]+>/g, " ").replace(/&amp;/g, "&").replace(/&lt;/g, "<").replace(/&gt;/g, ">").trim();
+  const match = tagMatch(xml, tag);
+  return match ? decodeXml(match[1].replace(/<[^>]+>/g, " ")) : "";
+}
+function readBlock(xml: string, tag: string): string {
+  return tagMatch(xml, tag)?.[1] || "";
+}
+function readAttr(xml: string, tag: string, attr: string): string {
+  const match = xml.match(new RegExp("<(?:[\\\\w.-]+:)?"+tag+"\\\\b([^>]*)>", "i"));
+  const value = match?.[1]?.match(new RegExp("\\\\b"+attr+"\\\\s*=\\\\s*['\\\"]([^'\\\"]+)['\\\"]", "i"));
+  return value?.[1] || "";
+}
+function partyMetadata(xml: string, partyTag: string) {
+  const block = readBlock(xml, partyTag);
+  const party = readBlock(block, "Party") || block;
+  const legal = readBlock(party, "PartyLegalEntity");
+  const partyName = readBlock(party, "PartyName");
+  const tax = readBlock(party, "PartyTaxScheme");
+  const address = readBlock(party, "PostalAddress");
+  const contact = readBlock(party, "Contact");
+  const cif = readTag(tax, "CompanyID") || readTag(legal, "CompanyID") || readTag(party, "CompanyID");
+  const street = [readTag(address, "StreetName"), readTag(address, "AdditionalStreetName")].filter(Boolean).join(" ");
+  const locality = [readTag(address, "CityName"), readTag(address, "PostalZone"), readTag(address, "CountrySubentity")].filter(Boolean).join(", ");
+  return {
+    name: readTag(legal, "RegistrationName") || readTag(partyName, "Name") || readTag(legal, "CompanyName") || null,
+    cif: cif.replace(/^RO/i, "") || null,
+    address: [street, locality].filter(Boolean).join(", ") || null,
+    reg_com: readTag(legal, "CompanyLegalForm") || null,
+    email: readTag(contact, "ElectronicMail") || null,
+    phone: readTag(contact, "Telephone") || null,
+  };
 }
 function invoiceMetadata(xml: string) {
-  const supplier = xml.match(/<(?:[\w.-]+:)?AccountingSupplierParty\b[\s\S]*?<\/(?:[\w.-]+:)?AccountingSupplierParty>/i)?.[0] || xml;
-  const amount = readTag(xml, "TaxInclusiveAmount") || readTag(xml, "PayableAmount");
-  const payable = readTag(xml, "PayableAmount");
-  const prepaid = readTag(xml, "PrepaidAmount");
-  const tax = readTag(xml, "TaxAmount");
-  const subtotal = readTag(xml, "TaxExclusiveAmount");
-  const lines = [...xml.matchAll(/<(?:[\w.-]+:)?InvoiceLine\b[\s\S]*?<\/(?:[\w.-]+:)?InvoiceLine>/gi)].map((m) => ({
-    description: readTag(m[0], "Name") || readTag(m[0], "Description") || "Articol",
-    quantity: readTag(m[0], "InvoicedQuantity"),
-    unit_price: readTag(m[0], "PriceAmount"),
-    line_total: readTag(m[0], "LineExtensionAmount"),
-    unit: (m[0].match(/InvoicedQuantity[^>]*unitCode="([^"]+)"/i) || [])[1] || ""
-  }));
-  const customer = xml.match(/<(?:[\w.-]+:)?AccountingCustomerParty\b[\s\S]*?<\/(?:[\w.-]+:)?AccountingCustomerParty>/i)?.[0] || "";
-  const supplierAddress = readTag(supplier, "StreetName");
-  const customerAddress = readTag(customer, "StreetName");
-  const num = (v: string) => v ? Number(v.replace(",", ".")) : 0;
-  return { supplier_name: readTag(supplier, "RegistrationName") || readTag(supplier, "Name") || null, supplier_cif: readTag(supplier, "CompanyID") || null, supplier_address: supplierAddress, customer_name: readTag(customer, "RegistrationName") || null, customer_cif: readTag(customer, "CompanyID") || null, customer_address: customerAddress, invoice_number: readTag(xml, "ID") || null, invoice_date: readTag(xml, "IssueDate") || null, due_date: readTag(xml, "DueDate") || null, currency: readTag(xml, "DocumentCurrencyCode") || "RON", invoice_total: amount ? num(amount) : null, subtotal: num(subtotal), tax_total: num(tax), prepaid_total: num(prepaid), payable_amount: num(payable), lines };
+  const supplier = partyMetadata(xml, "AccountingSupplierParty");
+  const customer = partyMetadata(xml, "AccountingCustomerParty");
+  const legal = readBlock(xml, "LegalMonetaryTotal");
+  const taxTotal = readBlock(xml, "TaxTotal");
+  const lines = [...xml.matchAll(/<(?:[\\w.-]+:)?InvoiceLine\\b[^>]*>([\\s\\S]*?)<\\/(?:[\\w.-]+:)?InvoiceLine\\s*>/gi)].map((match) => {
+    const line = match[1], item = readBlock(line, "Item"), price = readBlock(line, "Price");
+    const quantityMatch = line.match(/<(?:[\\w.-]+:)?InvoicedQuantity\\b([^>]*)>([\\s\\S]*?)<\\/(?:[\\w.-]+:)?InvoicedQuantity\\s*>/i);
+    const tax = readBlock(line, "TaxTotal");
+    return {
+      description: readTag(item, "Name") || readTag(item, "Description") || readTag(line, "Description") || "Articol",
+      quantity: quantityMatch ? decodeXml(quantityMatch[2]) : "",
+      unit: quantityMatch ? readAttr(quantityMatch[0], "InvoicedQuantity", "unitCode") : "",
+      unit_price: readTag(price, "PriceAmount") || readTag(line, "PriceAmount"),
+      line_total: readTag(line, "LineExtensionAmount"),
+      tax_amount: readTag(tax, "TaxAmount"),
+      tax_percent: readTag(readBlock(tax, "TaxSubtotal"), "Percent"),
+    };
+  });
+  const currency = readTag(xml, "DocumentCurrencyCode") || "RON";
+  const subtotal = readTag(legal, "TaxExclusiveAmount") || readTag(xml, "TaxExclusiveAmount");
+  const taxAmount = readTag(taxTotal, "TaxAmount") || readTag(legal, "TaxAmount");
+  const total = readTag(legal, "TaxInclusiveAmount") || readTag(xml, "TaxInclusiveAmount") || readTag(legal, "PayableAmount") || readTag(xml, "PayableAmount");
+  const prepaid = readTag(legal, "PrepaidAmount") || readTag(xml, "PrepaidAmount");
+  const payable = readTag(legal, "PayableAmount") || readTag(xml, "PayableAmount");
+  const num = (value: string) => value ? Number(value.replace(",", ".")) : 0;
+  return {
+    supplier_name: supplier.name, supplier_cif: supplier.cif, supplier_address: supplier.address, supplier_reg_com: supplier.reg_com, supplier_email: supplier.email, supplier_phone: supplier.phone,
+    customer_name: customer.name, customer_cif: customer.cif, customer_address: customer.address, customer_reg_com: customer.reg_com, customer_email: customer.email, customer_phone: customer.phone,
+    invoice_number: readTag(xml, "ID") || null, invoice_date: readTag(xml, "IssueDate") || null, due_date: readTag(xml, "DueDate") || null, currency,
+    invoice_total: total ? num(total) : null, subtotal: num(subtotal), tax_total: num(taxAmount), prepaid_total: num(prepaid), payable_amount: num(payable), lines,
+  };
 }
-
 async function getAuthorizedClient(request: NextRequest) {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
