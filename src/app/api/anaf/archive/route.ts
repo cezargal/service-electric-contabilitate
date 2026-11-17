@@ -10,7 +10,7 @@ function decodeXml(value: string): string {
     .replace(/&quot;/g, '"').replace(/&apos;/g, "'").trim();
 }
 function tagMatch(xml: string, tag: string): RegExpMatchArray | null {
-  return xml.match(new RegExp("<(?:[\\\\w.-]+:)?"+tag+"(?:\\\\s[^>]*)?>([\\\\s\\\\S]*?)<\\\\/(?:[\\\\w.-]+:)?"+tag+"\\\\s*>", "i"));
+  return xml.match(new RegExp("<(?:[\\w.-]+:)?"+tag+"(?:\\s[^>]*)?>([\\s\\S]*?)<\\/(?:[\\w.-]+:)?"+tag+"\\s*>", "i"));
 }
 function readTag(xml: string, tag: string): string {
   const match = tagMatch(xml, tag);
@@ -20,8 +20,8 @@ function readBlock(xml: string, tag: string): string {
   return tagMatch(xml, tag)?.[1] || "";
 }
 function readAttr(xml: string, tag: string, attr: string): string {
-  const match = xml.match(new RegExp("<(?:[\\\\w.-]+:)?"+tag+"\\\\b([^>]*)>", "i"));
-  const value = match?.[1]?.match(new RegExp("\\\\b"+attr+"\\\\s*=\\\\s*['\\\"]([^'\\\"]+)['\\\"]", "i"));
+  const match = xml.match(new RegExp("<(?:[\\w.-]+:)?"+tag+"\\b([^>]*)>", "i"));
+  const value = match?.[1]?.match(new RegExp("\\b"+attr+"\\s*=\\s*['\\\"]([^'\\\"]+)['\\\"]", "i"));
   return value?.[1] || "";
 }
 function partyMetadata(xml: string, partyTag: string) {
