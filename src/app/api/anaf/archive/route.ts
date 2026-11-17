@@ -10,7 +10,7 @@ function decodeXml(value: string): string {
     .replace(/&quot;/g, '"').replace(/&apos;/g, "'").trim();
 }
 function tagMatch(xml: string, tag: string): RegExpMatchArray | null {
-  return xml.match(new RegExp("<(?:[\\w.-]+:)?"+tag+"(?:\\s[^>]*)?>([\\s\\S]*?)<\\/(?:[\\w.-]+:)?"+tag+"\\s*>", "i"));
+  return xml.match(new RegExp("<(?:[\\w.-]+:)?"+tag+"(?:\\s[^>]*)?>([\s\S]*?)<\/(?:[\\w.-]+:)?"+tag+"\\s*>", "i"));
 }
 function readTag(xml: string, tag: string): string {
   const match = tagMatch(xml, tag);
@@ -49,9 +49,9 @@ function invoiceMetadata(xml: string) {
   const customer = partyMetadata(xml, "AccountingCustomerParty");
   const legal = readBlock(xml, "LegalMonetaryTotal");
   const taxTotal = readBlock(xml, "TaxTotal");
-  const lines = [...xml.matchAll(/<(?:[\\w.-]+:)?InvoiceLine\\b[^>]*>([\\s\\S]*?)<\\/(?:[\\w.-]+:)?InvoiceLine\\s*>/gi)].map((match) => {
+  const lines = [...xml.matchAll(/<(?:[\w.-]+:)?InvoiceLine\b[^>]*>([\s\S]*?)<\/(?:[\\w.-]+:)?InvoiceLine\s*>/gi)].map((match) => {
     const line = match[1], item = readBlock(line, "Item"), price = readBlock(line, "Price");
-    const quantityMatch = line.match(/<(?:[\\w.-]+:)?InvoicedQuantity\\b([^>]*)>([\\s\\S]*?)<\\/(?:[\\w.-]+:)?InvoicedQuantity\\s*>/i);
+    const quantityMatch = line.match(/<(?:[\w.-]+:)?InvoicedQuantity\b([^>]*)>([\s\S]*?)<\/(?:[\\w.-]+:)?InvoicedQuantity\s*>/i);
     const tax = readBlock(line, "TaxTotal");
     return {
       description: readTag(item, "Name") || readTag(item, "Description") || readTag(line, "Description") || "Articol",
