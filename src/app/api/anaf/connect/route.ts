@@ -1,7 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { randomBytes } from "node:crypto";
+import { authorizeOwner } from "@/lib/owner-auth";
 
 export async function GET(request: NextRequest) {
+  const authorization = await authorizeOwner(request);
+  if (!authorization.ok) return NextResponse.json({ error: authorization.error }, { status: authorization.status });
+
   const clientId = process.env.ANAF_CLIENT_ID;
   const redirectUri = process.env.ANAF_REDIRECT_URI;
   if (!clientId || !redirectUri || !process.env.ANAF_CLIENT_SECRET) {
@@ -14,7 +18,7 @@ export async function GET(request: NextRequest) {
   authorize.searchParams.set("client_id", clientId);
   authorize.searchParams.set("redirect_uri", redirectUri);
   authorize.searchParams.set("token_content_type", "jwt");
-  // ANAF: scope și state rămân necompletate, conform fluxului înrolat.
+  authorize.searchParams.set("state", state);
 
   const response = NextResponse.redirect(authorize);
   response.cookies.set("anaf_oauth_state", state, {

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import { OWNER_USER_ID } from "@/lib/owner-auth";
 
 const api = "https://www.oblio.eu/api";
 
@@ -25,7 +26,7 @@ export async function POST(request: NextRequest) {
     if (!supabaseUrl || !anonKey) return NextResponse.json({ error: "Configurarea aplicației este incompletă." }, { status: 500 });
     const supabase = createClient(supabaseUrl, anonKey, { auth: { persistSession: false, autoRefreshToken: false } });
     const { data: authData, error: authError } = await supabase.auth.getUser(jwt);
-    if (authError || !authData.user || authData.user.id !== "18bd609e-4ad7-4896-bb6a-b5a1358f7495") {
+    if (authError || !authData.user || authData.user.id !== OWNER_USER_ID) {
       return NextResponse.json({ error: "Acces neautorizat." }, { status: 403 });
     }
 

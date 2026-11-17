@@ -23,16 +23,17 @@ function page(message: string, ok = false) {
 
 export async function GET(request: NextRequest) {
   const expectedState = request.cookies.get("anaf_oauth_state")?.value;
+  const returnedState = request.nextUrl.searchParams.get("state");
   const code = request.nextUrl.searchParams.get("code");
   const anafError = request.nextUrl.searchParams.get("error");
 
   const clearCookie = (response: NextResponse) => {
-    response.cookies.set("anaf_oauth_state", "", { httpOnly: true, secure: true, sameSite: "lax", path: "/api/anaf/callback", maxAge: 0 });
+    response.cookies.set("anaf_oauth_state", "", { httpOnly: true, secure: process.env.NODE_ENV === "production", sameSite: "lax", path: "/api/anaf/callback", maxAge: 0 });
     return response;
   };
 
   if (anafError) return clearCookie(page("ANAF a refuzat autorizarea. " + (request.nextUrl.searchParams.get("error_description") || anafError)));
-  if (!expectedState) {
+  if (!expectedState || !returnedState || returnedState !== expectedState) {
     return clearCookie(page("Sesiunea de autorizare a expirat sau nu este validă. Reia conectarea din aplicație."));
   }
   if (!code) return clearCookie(page("ANAF nu a returnat codul de autorizare. Reia conectarea."));

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createDecipheriv } from "node:crypto";
 import { inflateRawSync } from "node:zlib";
 import { createClient } from "@supabase/supabase-js";
+import { authorizeOwner } from "@/lib/owner-auth";
 
 function decryptToken(value: string, keyHex: string) {
   const [ivPart, tagPart, dataPart] = value.split(".");
@@ -68,6 +69,9 @@ function parseInvoice(xml: string) {
 }
 
 export async function GET(request: NextRequest) {
+  const authorization = await authorizeOwner(request);
+  if (!authorization.ok) return NextResponse.json({ error: authorization.error }, { status: authorization.status });
+
   const cif = (request.nextUrl.searchParams.get("cif") || "").replace(/^RO/i, "").replace(/\D/g, "");
   const id = request.nextUrl.searchParams.get("id") || "";
   if (cif.length < 2 || !id) return NextResponse.json({ error: "Lipsesc CUI-ul sau identificatorul mesajului ANAF." }, { status: 400 });

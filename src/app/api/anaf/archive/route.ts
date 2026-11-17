@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import { OWNER_USER_ID } from "@/lib/owner-auth";
 
 
 function decodeXml(value: string): string {
@@ -90,6 +91,7 @@ async function getAuthorizedClient(request: NextRequest) {
   });
   const { data, error } = await client.auth.getUser(access);
   if (error || !data.user) throw new Error("Sesiunea aplicației a expirat. Autentifică-te din nou.");
+  if (data.user.id !== OWNER_USER_ID) throw Object.assign(new Error("Acces neautorizat."), { status: 403 });
   return { client, secret };
 }
 
@@ -121,6 +123,6 @@ export async function GET(request: NextRequest) {
     const documents = await Promise.all((data || []).map(async (doc: any) => { if (!doc.has_xml) return doc; const { data: xml, error: xmlError } = await client.rpc("get_anaf_supplier_archive_xml", { p_secret: secret, p_cif: String(doc.cif || "").replace(/\D/g, ""), p_message_id: String(doc.anaf_message_id || "") }); if (xmlError || !xml) return doc; return { ...doc, ...invoiceMetadata(String(xml)) }; }));
     return NextResponse.json({ success: true, documents }, { headers: { "Cache-Control": "no-store" } });
   } catch (error: any) {
-    return NextResponse.json({ error: error?.message || "Nu am putut accesa arhiva SPV." }, { status: 401 });
+    return NextResponse.json({ error: error?.message || "Nu am putut accesa arhiva SPV." }, { status: error?.status || 401 });
   }
 }
