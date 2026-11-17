@@ -10,7 +10,7 @@ function decodeXml(value: string): string {
     .replace(/&quot;/g, '"').replace(/&apos;/g, "'").trim();
 }
 function tagMatch(xml: string, tag: string): RegExpMatchArray | null {
-  return xml.match(new RegExp(String.raw\`<(?:[\w.-]+:)?\${tag}(?:\s[^>]*)?>([\s\S]*?)<\/(?:[\w.-]+:)?\${tag}\s*>\`, "i"));
+  return xml.match(new RegExp(String.raw`<(?:[\w.-]+:)?${tag}(?:\s[^>]*)?>([\s\S]*?)<\/(?:[\w.-]+:)?${tag}\s*>`, "i"));
 }
 function readTag(xml: string, tag: string): string {
   const match = tagMatch(xml, tag);
