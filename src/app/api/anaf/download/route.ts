@@ -81,16 +81,17 @@ function parseInvoice(xml: string) {
  const payableAmount=amountValue(xmlValue(totalBlock,"PayableAmount"));
  const taxInclusiveAmount=amountValue(xmlValue(totalBlock,"TaxInclusiveAmount"));
  const subtotal=amountValue(xmlValue(totalBlock,"TaxExclusiveAmount"));
- const taxTotalBlocks=[...xml.matchAll(new RegExp("<(?:[\\w.-]+:)?TaxTotal\\b[\\s\\S]*?<\\/(?:[\\w.-]+:)?TaxTotal>","gi"))].map(m=>m[0]);
+ const invoiceTotalsXml=xml.replace(new RegExp("<(?:[\\w.-]+:)?InvoiceLine\\b[\\s\\S]*?<\\/(?:[\\w.-]+:)?InvoiceLine>","gi"),"");
+ const taxTotalBlocks=[...invoiceTotalsXml.matchAll(new RegExp("<(?:[\\w.-]+:)?TaxTotal\\b[\\s\\S]*?<\\/(?:[\\w.-]+:)?TaxTotal>","gi"))].map(m=>m[0]);
  const vatTotal=taxTotalBlocks.reduce((sum,block)=>sum+amountValue(xmlValue(block,"TaxAmount")),0);
  const lineBlocks=[...xml.matchAll(new RegExp("<(?:[\\w.-]+:)?InvoiceLine\\b[\\s\\S]*?<\\/(?:[\\w.-]+:)?InvoiceLine>","gi"))];
  const lines=lineBlocks.map(m=>{
-   const block=m[0],quantityTag=block.match(new RegExp("<(?:[\\w.-]+:)?InvoicedQuantity\\b[^>]*>","i"))?.[0]||"";
-   const tax=xmlBlock(block,"TaxCategory")||"";
+   const block=m[0],item=xmlBlock(block,"Item");
+   const tax=xmlBlock(item,"ClassifiedTaxCategory")||xmlBlock(block,"TaxCategory")||"";
    const lineTax=xmlBlock(block,"TaxTotal")||"";
    return {
     description:xmlValue(block,"Name")||xmlValue(block,"Description")||"Articol",
-    itemCode:xmlValue(block,"ID"),
+    itemCode:xmlValue(xmlBlock(item,"StandardItemIdentification"),"ID")||xmlValue(xmlBlock(item,"SellersItemIdentification"),"ID")||xmlValue(xmlBlock(item,"BuyersItemIdentification"),"ID"),
     quantity:xmlValue(block,"InvoicedQuantity"),
     unit:xmlAttribute(block,"InvoicedQuantity","unitCode")||"—",
     unitPrice:xmlValue(xmlBlock(block,"Price")||block,"PriceAmount"),
