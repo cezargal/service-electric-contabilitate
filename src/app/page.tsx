@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { supabase } from "@/lib/supabase";
 
 type Client={id:string;tip_client:string;denumire:string;cui?:string;nr_reg_com?:string;adresa?:string;email?:string;telefon?:string};
@@ -16,6 +16,8 @@ export default function Home(){
  const [current,setCurrent]=useState<any>(null),[loginEmail,setLoginEmail]=useState(""),[loginPass,setLoginPass]=useState("");
  const [newClient,setNewClient]=useState({denumire:"",cui:"",adresa:"",email:"",telefon:"",tip_client:"firma"});
  const [search,setSearch]=useState("");
+ const [sourceRef,setSourceRef]=useState<{ticketId:string;fisaId:string;ticketNumber:string}|null>(null);
+ const deepLinkHandled=useRef("");
  const [anafLoading,setAnafLoading]=useState(false),[anafMessage,setAnafMessage]=useState("");
  const [supplierCif,setSupplierCif]=useState("43594993"),[supplierDays,setSupplierDays]=useState("30"),[supplierLoading,setSupplierLoading]=useState(false),[supplierMessages,setSupplierMessages]=useState<any[]>([]),[supplierStatus,setSupplierStatus]=useState("");
  const [supplierPreview,setSupplierPreview]=useState<any>(null),[supplierPreviewLoading,setSupplierPreviewLoading]=useState(false),[courierReceipt,setCourierReceipt]=useState(""),[courierReceiptDate,setCourierReceiptDate]=useState(""),[supplierPaymentDate,setSupplierPaymentDate]=useState("");
@@ -29,9 +31,68 @@ export default function Home(){
  useEffect(()=>{setDate(today());setCollectionDate(today());setArchivePayDate(today())},[]);
  useEffect(()=>{supabase.auth.getSession().then(({data})=>{setSession(data.session);setLoading(false)});const {data:{subscription}}=supabase.auth.onAuthStateChange((_e,s)=>setSession(s));return()=>subscription.unsubscribe()},[]);
  useEffect(()=>{if(session)loadData()},[session]);
+ useEffect(()=>{
+  if(!session)return;
+  const params=new URLSearchParams(window.location.search);
+  const ticketId=params.get("source_ticket_id"),fisaId=params.get("source_fisa_id"),invoiceId=params.get("invoice_id");
+  const key=ticketId&&fisaId?"source:"+ticketId+":"+fisaId:invoiceId?"invoice:"+invoiceId:"";
+  if(!key||deepLinkHandled.current===key)return;
+  deepLinkHandled.current=key;
+  if(ticketId&&fisaId){loadInterventionSource(ticketId,fisaId);return}
+  if(invoiceId){openInvoice(invoiceId).then(()=>window.history.replaceState(null,"",window.location.pathname))}
+ },[session]);
  useEffect(()=>{if(session&&tab==="import")loadOblioHistory()},[session,tab]);
  useEffect(()=>{if(session&&tab==="archive")loadAnafArchive()},[session,tab]);
  async function loadData(){setError("");const {data,error}=await supabase.rpc("app_bootstrap");if(error){setError(error.message);return}setClients(data?.clients||[]);setInvoices(data?.invoices||[])}
+
+ async function loadInterventionSource(ticketId:string,fisaId:string){
+  setError("");setNotice("Se preia fișa de intervenție…");
+  try{
+   const {data,error}=await supabase.rpc("app_get_intervention_invoice_source",{p_ticket_id:Number(ticketId),p_fisa_id:Number(fisaId)});
+   if(error)throw error;
+   const ticket=data?.ticket,fisa=data?.fisa,sourceClient=data?.client||{};
+   if(!ticket||!fisa)throw new Error("Fișa de intervenție nu a fost găsită.");
+   if(fisa.facturat||fisa.factura_numar)throw new Error("Fișa este deja marcată ca facturată. Verifică numărul facturii în aplicația de fișe.");
+   const clientCui=String(fisa.client_cif||"").trim();
+   if(!clientCui)throw new Error("Fișa nu are CUI-ul clientului. Completează-l și salvează fișa înainte de facturare.");
+   const {data:bootstrap,error:bootstrapError}=await supabase.rpc("app_bootstrap");
+   if(bootstrapError)throw bootstrapError;
+   const normalize=(value:any)=>String(value||"").toUpperCase().replace(/^RO/,"").replace(/[^A-Z0-9]/g,"");
+   const known=(bootstrap?.clients||[]).find((item:any)=>normalize(item.cui)===normalize(clientCui));
+   const name=known?.denumire||fisa.client_nume||sourceClient.name||ticket.nume||"Client";
+   const billAddress=known?.adresa||"";
+   const clientEmail=known?.email||sourceClient.email||ticket.email||"";
+   const clientPhone=known?.telefon||sourceClient.phone||ticket.telefon||"";
+   const parseList=(value:any)=>{
+    if(Array.isArray(value))return value;
+    if(typeof value==="string"){try{const parsed=JSON.parse(value);return Array.isArray(parsed)?parsed:[]}catch{return []}}
+    return [];
+   };
+   const materials=parseList(fisa.materiale).map((item:any)=>({name:item.name||item.nume||item.denumire||"",qty:Number(item.qty??item.cantitate??1),price:Number(item.price??item.pret??item.pret_unitar??0)})).filter((item:any)=>item.name);
+   const labor=parseList(fisa.manopera_detalii).map((item:any)=>({name:item.name||item.nume||item.denumire||"Manoperă",qty:Number(item.qty??item.cantitate??1),price:Number(item.price??item.pret??item.pret_unitar??0)})).filter((item:any)=>item.name);
+   const address=[ticket.adresa,ticket.scara&&"Scara "+ticket.scara,ticket.apartament&&"Ap. "+ticket.apartament,ticket.etaj&&"Etaj "+ticket.etaj].filter(Boolean).join(", ");
+   const serviceDate=String(fisa.data_interventie||ticket.created_at||"").slice(0,10).split("-").reverse().join(".");
+   const details=[
+    materials.length?"Produse/materiale utilizate: "+materials.map((item:any)=>item.name+(item.qty!==1?" × "+item.qty:"")).join("; "):"",
+    labor.length?"Servicii/manoperă efectuate: "+labor.map((item:any)=>item.name+(item.qty!==1?" × "+item.qty:"")).join("; "):"",
+    !labor.length&&String(fisa.lucrari_efectuate||"").trim()?"Servicii/manoperă efectuate: "+String(fisa.lucrari_efectuate).trim():"",
+    "Adresă intervenție: "+(address||"necompletată")
+   ].filter(Boolean);
+   const serviceTitle="Servicii conform fișei nr. "+ticket.numar+(serviceDate?" din "+serviceDate:"");
+   const description=serviceTitle+"\n"+details.join("\n");
+   const calculated=materials.reduce((sum:number,item:any)=>sum+item.qty*item.price,0)+labor.reduce((sum:number,item:any)=>sum+item.qty*item.price,0);
+   const savedTotal=Number(fisa.total||0);const amount=savedTotal>0?savedTotal:calculated;
+   const newLine={descriere:description,cantitate:1,unitate:"serviciu",pret_unitar:amount,cota_tva:0};
+   setClientId(known?.id||"");setClientName(name);setCui(clientCui);setReg(known?.nr_reg_com||"");setAddress(billAddress);setEmail(clientEmail);setPhone(clientPhone);
+   setLines([newLine]);setDate(today());setDue("");setNotes("Servicii conform fișei de intervenție "+ticket.numar);
+   setSourceRef({ticketId:String(ticket.id),fisaId:String(fisa.id),ticketNumber:String(ticket.numar)});
+   const draftItem={...newLine,id:"draft-intervention",valoare_totala:amount};
+   setCurrent({isDraftPreview:true,serie:"SE",numar:"—",data_document:today(),client_denumire:name,client_cui:clientCui,client_nr_reg_com:known?.nr_reg_com||"",client_adresa:billAddress,client_email:clientEmail,items:[draftItem],total_fara_tva:amount,total_tva:0,total:amount,observatii:"Servicii conform fișei de intervenție "+ticket.numar});
+   setTab("preview");setNotice("Fișa "+ticket.numar+" a fost preluată. Verifică clientul și factura; emiterea se face doar după apăsarea butonului „Emite factura”.");
+   window.history.replaceState(null,"",window.location.pathname);
+  }catch(e:any){setError(e.message||"Fișa nu a putut fi preluată.");setNotice("")}
+ }
+
  const totals=useMemo(()=>lines.reduce((a,l)=>{const net=Math.round(Number(l.cantitate||0)*Number(l.pret_unitar||0)*100)/100;const vat=0;return {net:a.net+net,vat:a.vat,total:a.total+net}},{net:0,vat:0,total:0}),[lines]);
  async function loadOblioHistory(){const {data,error}=await supabase.rpc("app_list_oblio_imports");if(!error&&data)setOblioHistory(data)}
  async function importOblio(){setError("");setNotice("");setOblioResult(null);if(!oblioEmail.trim()||!oblioSecret.trim()||!oblioCif.trim()){setError("Completează datele de conectare Oblio și CUI-ul firmei.");return}setOblioLoading(true);try{const {data:{session:activeSession}}=await supabase.auth.getSession();const response=await fetch("/api/import/oblio",{method:"POST",headers:{"Content-Type":"application/json","Authorization":`Bearer ${activeSession?.access_token||""}`},body:JSON.stringify({clientId:oblioEmail,clientSecret:oblioSecret,cif:oblioCif})});const data=await response.json();if(!response.ok)throw new Error(data.error||"Importul Oblio a eșuat.");const {data:stored,error:storeError}=await supabase.rpc("app_import_oblio",{p_clients:data.clients,p_documents:data.documents});if(storeError)throw new Error("Datele au fost citite din Oblio, dar salvarea a eșuat: "+storeError.message);setOblioResult({...data,stored});setOblioSecret("");setNotice("Importul Oblio s-a încheiat. Datele au fost salvate fără a emite facturi noi.");await loadData();}catch(e:any){setError(e.message||"Importul nu a putut fi finalizat.");}finally{setOblioLoading(false)}}
@@ -93,13 +154,16 @@ export default function Home(){
  function pickClient(id:string){setClientId(id);const c=clients.find(x=>x.id===id);if(c){setClientName(c.denumire);setCui(c.cui||"");setReg(c.nr_reg_com||"");setAddress(c.adresa||"");setEmail(c.email||"");setPhone(c.telefon||"")}else{setClientName("");setCui("");setReg("");setAddress("");setEmail("");setPhone("")}}
  async function saveClient(e:any){e.preventDefault();setError("");const {data,error}=await supabase.rpc("app_save_client",{p_client:newClient});if(error){setError(error.message);return}await loadData();pickClient(data.id);setNotice("Client salvat.");setTab("new")}
  function previewDraft(){setError("");const items=lines.map((l,i)=>{const value=Math.round(Number(l.cantitate||0)*Number(l.pret_unitar||0)*100)/100;return {...l,id:"draft-"+i,valoare_totala:value}});const net=items.reduce((a,x)=>a+Number(x.valoare_totala),0);setCurrent({isDraftPreview:true,serie:"SE",numar:"—",data_document:date,data_scadenta:due,client_denumire:clientName||"Client",client_cui:cui,client_nr_reg_com:reg,client_adresa:address,client_email:email,items,total_fara_tva:net,total_tva:0,total:net,observatii:notes});setTab("preview")}
- async function issueInvoice(){setError("");setNotice("");if(!clientName.trim()){setError("Completează denumirea clientului.");return}if(lines.some(l=>!l.descriere.trim()||Number(l.cantitate)<=0)){setError("Verifică pozițiile facturii.");return}
+ async function issueInvoice(){setError("");setNotice("");if(!clientName.trim()){setError("Completează denumirea clientului.");return}if(lines.some(l=>!l.descriere.trim()||Number(l.cantitate)<=0)){setError("Verifică pozițiile facturii.");return}if(lines.some(l=>Number(l.pret_unitar)<0)||totals.total<=0){setError("Totalul facturii trebuie să fie mai mare decât zero.");return}
  const payload={id:clientId||null,tip_client:"firma",denumire:clientName,cui,nr_reg_com:reg,adresa:address,email,telefon:phone,tara:"România"};
- const {data,error}=await supabase.rpc("app_issue_invoice",{p_client:payload,p_linii:lines.map((l,i)=>({...l,cota_tva:0,pozitie:i+1})),p_data:date,p_scadenta:due||null,p_observatii:notes||null});
+ const linePayload=lines.map((l,i)=>({...l,cota_tva:0,pozitie:i+1}));
+ const {data,error}=sourceRef
+  ?await supabase.rpc("app_issue_intervention_invoice",{p_client:payload,p_linii:linePayload,p_data:date,p_scadenta:due||null,p_observatii:notes||null,p_ticket_id:Number(sourceRef.ticketId),p_fisa_id:Number(sourceRef.fisaId)})
+  :await supabase.rpc("app_issue_invoice",{p_client:payload,p_linii:linePayload,p_data:date,p_scadenta:due||null,p_observatii:notes||null});
  if(error){setError("Factura nu a fost emisă: "+error.message);return}
  const {data:invoice,error:readError}=await supabase.rpc("app_get_invoice",{p_id:data.id});
  if(readError){setError("Factura a fost emisă, dar nu am putut încărca detaliile: "+readError.message);return}
- setCurrent(invoice);await loadData();setTab("preview");setNotice("Factura "+data.serie+" "+data.numar+" a fost emisă și salvată în baza de date.");
+ setCurrent(invoice);await loadData();setTab("preview");setNotice(sourceRef?"Factura "+data.serie+" "+data.numar+" a fost emisă și asociată fișei "+sourceRef.ticketNumber+".":"Factura "+data.serie+" "+data.numar+" a fost emisă și salvată în baza de date.");setSourceRef(null);
  }
  async function openInvoice(id:string){const {data,error}=await supabase.rpc("app_get_invoice",{p_id:id});if(error){setError(error.message);return}setCurrent(data);setTab("preview")}
  function startCollection(invoice:any){
