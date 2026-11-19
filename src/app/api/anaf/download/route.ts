@@ -60,7 +60,7 @@ function xmlAttribute(xml: string, tag: string, attribute: string): string {
  return value?.[1]||"";
 }
 function amountValue(value: string): number {
- const normalized=String(value||"").replace(/\\s/g,"").replace(",",".");
+ const normalized=String(value||"").replace(/\s/g,"").replace(",",".");
  const amount=Number(normalized);
  return Number.isFinite(amount)?amount:0;
 }
