@@ -60,7 +60,7 @@ export default function Home(){
    const normalize=(value:any)=>String(value||"").toUpperCase().replace(/^RO/,"").replace(/[^A-Z0-9]/g,"");
    const known=(bootstrap?.clients||[]).find((item:any)=>normalize(item.cui)===normalize(clientCui));
    const name=known?.denumire||fisa.client_nume||sourceClient.name||ticket.nume||"Client";
-   const billAddress=known?.adresa||sourceClient.address||"";
+   const billAddress=known?.adresa||"";
    const clientEmail=known?.email||sourceClient.email||ticket.email||"";
    const clientPhone=known?.telefon||sourceClient.phone||ticket.telefon||"";
    const parseList=(value:any)=>{
