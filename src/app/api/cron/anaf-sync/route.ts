@@ -76,7 +76,7 @@ async function getAccessToken(supabase: any, storageSecret: string, encryptionKe
       "Content-Type": "application/x-www-form-urlencoded",
       Accept: "application/json",
     },
-    body: new URLSearchParams({ grant_type: "refresh_token", refresh_token: refreshToken, token_content_type: "jwt" }),
+    body: new URLSearchParams({ grant_type: "refresh_token", refresh_token: refreshToken }),
     cache: "no-store",
     signal: AbortSignal.timeout(20000),
   });
@@ -137,7 +137,7 @@ export async function POST(request: NextRequest) {
     if (archiveError) throw new Error("Nu am putut verifica arhiva SPV.");
     const cutoff = Date.now() - 60 * 24 * 60 * 60 * 1000;
     const pending = (Array.isArray(archive) ? archive : [])
-      .filter((doc: any) => !doc.has_xml && doc.anaf_message_id && (!doc.created_at_anaf || new Date(doc.created_at_anaf).getTime() >= cutoff))
+      .filter((doc: any) => !doc.has_xml && doc.anaf_message_id && doc.created_at_anaf && new Date(doc.created_at_anaf).getTime() >= cutoff)
       .sort((a: any, b: any) => new Date(b.created_at_anaf || 0).getTime() - new Date(a.created_at_anaf || 0).getTime())
       .slice(0, 12);
 
