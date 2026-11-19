@@ -24,7 +24,7 @@ export default function Home(){
  const deepLinkHandled=useRef("");
  const [anafLoading,setAnafLoading]=useState(false),[anafMessage,setAnafMessage]=useState("");
  const [supplierCif,setSupplierCif]=useState("43594993"),[supplierDays,setSupplierDays]=useState("30"),[supplierLoading,setSupplierLoading]=useState(false),[supplierMessages,setSupplierMessages]=useState<any[]>([]),[supplierStatus,setSupplierStatus]=useState("");
- const [supplierPreview,setSupplierPreview]=useState<any>(null),[supplierPreviewLoading,setSupplierPreviewLoading]=useState(false),[courierReceipt,setCourierReceipt]=useState(""),[courierReceiptDate,setCourierReceiptDate]=useState(""),[supplierPaymentDate,setSupplierPaymentDate]=useState("");
+ const [supplierPreview,setSupplierPreview]=useState<any>(null),[supplierPreviewLoading,setSupplierPreviewLoading]=useState(false),[courierReceipt,setCourierReceipt]=useState(""),[courierReceiptDate,setCourierReceiptDate]=useState(""),[supplierPaymentDate,setSupplierPaymentDate]=useState(""),[supplierPaymentMethod,setSupplierPaymentMethod]=useState("");
  const [anafArchive,setAnafArchive]=useState<any[]>([]),[archiveLoading,setArchiveLoading]=useState(false),[archiveSearch,setArchiveSearch]=useState(""),[archiveBusyId,setArchiveBusyId]=useState(""),[archiveProgress,setArchiveProgress]=useState("");
  const [archiveInvoice,setArchiveInvoice]=useState<any>(null),[archiveInvoiceLoading,setArchiveInvoiceLoading]=useState(false),[archivePayments,setArchivePayments]=useState<any[]>([]);
  const [archivePayDate,setArchivePayDate]=useState(""),[archivePayAmount,setArchivePayAmount]=useState(""),[archivePayMethod,setArchivePayMethod]=useState("banca"),[archivePayReference,setArchivePayReference]=useState(""),[archivePayNotes,setArchivePayNotes]=useState(""),[archivePaySaving,setArchivePaySaving]=useState(false);
@@ -127,7 +127,7 @@ export default function Home(){
  async function loadSupplierInvoices(){setSupplierLoading(true);setSupplierStatus("");setError("");try{const {data:{session:activeSession}}=await supabase.auth.getSession();const response=await fetch(`/api/anaf/invoices?cif=${encodeURIComponent(supplierCif)}&days=${supplierDays}`,{headers:{Authorization:`Bearer ${activeSession?.access_token||""}`},cache:"no-store"});const data=await response.json();if(!response.ok)throw new Error(data.error||"Preluarea facturilor din SPV a eșuat.");setSupplierMessages(data.messages||[]);setSupplierStatus(data.count?`ANAF a returnat ${data.count} mesaje de tip factură primită.`:"ANAF nu a găsit facturi primite în intervalul selectat.");}catch(e:any){setSupplierStatus(e.message||"Nu am putut prelua facturile.");}finally{setSupplierLoading(false)}}
  async function previewSupplierInvoice(message:any){
   setSupplierPreviewLoading(true);setSupplierStatus("");
-  try{const {data:{session:activeSession}}=await supabase.auth.getSession();const response=await fetch(`/api/anaf/download?cif=${encodeURIComponent(supplierCif)}&id=${encodeURIComponent(message.id)}&view=1`,{headers:{Authorization:`Bearer ${activeSession?.access_token||""}`},cache:"no-store"});const data=await response.json();if(!response.ok)throw new Error(data.error||"Nu am putut citi factura.");setSupplierPreview({...data, message});setCourierReceipt("");setCourierReceiptDate("");setSupplierPaymentDate(data.invoice?.invoiceDate||"");}
+  try{const {data:{session:activeSession}}=await supabase.auth.getSession();const response=await fetch(`/api/anaf/download?cif=${encodeURIComponent(supplierCif)}&id=${encodeURIComponent(message.id)}&view=1`,{headers:{Authorization:`Bearer ${activeSession?.access_token||""}`},cache:"no-store"});const data=await response.json();if(!response.ok)throw new Error(data.error||"Nu am putut citi factura.");setSupplierPreview({...data, message});setCourierReceipt("");setCourierReceiptDate("");setSupplierPaymentDate("");setSupplierPaymentMethod("");}
   catch(e:any){setSupplierStatus(e.message||"Nu am putut afișa factura.");}finally{setSupplierPreviewLoading(false)}
  }
  async function downloadSupplierXml(message:any){
@@ -144,11 +144,13 @@ export default function Home(){
   if(!supplierPreview?.invoice){return}
   const inv=supplierPreview.invoice;
   if(!inv.total||inv.total<=0){setSupplierStatus("Totalul facturii nu a putut fi extras din XML. Nu am importat o sumă incorectă.");return}
+  if(String(inv.currency||"RON").toUpperCase()!=="RON"){setSupplierStatus("Importul în RJIP este disponibil momentan doar pentru facturi în RON.");return}
+  if(!supplierPaymentMethod||!supplierPaymentDate){setSupplierStatus("Alege metoda și data plății efective înainte de import.");return}
   setSupplierPreviewLoading(true);setSupplierStatus("");
   try{
-   const {data:{session:activeSession}}=await supabase.auth.getSession();const response=await fetch("/api/anaf/import-rjip",{method:"POST",headers:{"Content-Type":"application/json","Authorization":`Bearer ${activeSession?.access_token||""}`},body:JSON.stringify({cif:supplierCif,id:supplierPreview.id,invoice:inv,courierReceipt,courierReceiptDate,supplierPaymentDate})});
+   const {data:{session:activeSession}}=await supabase.auth.getSession();const response=await fetch("/api/anaf/import-rjip",{method:"POST",headers:{"Content-Type":"application/json","Authorization":`Bearer ${activeSession?.access_token||""}`},body:JSON.stringify({cif:supplierCif,id:supplierPreview.id,invoice:inv,courierReceipt,courierReceiptDate,supplierPaymentDate,supplierPaymentMethod})});
    const data=await response.json();if(!response.ok)throw new Error(data.error||"Importul în RJIP a eșuat.");
-   setSupplierStatus(data.duplicate?"Factura exista deja în RJIP; nu am creat o dublură.":"Factura a fost importată în RJIP, în așteptarea verificării plății bancare.");
+   setSupplierStatus(data.duplicate?"Factura exista deja în RJIP; nu am creat o dublură.":"Factura a fost importată în RJIP cu metoda de plată selectată, în așteptarea verificării.");
    setSupplierPreview(null);
   }catch(e:any){setSupplierStatus(e.message||"Nu am putut importa factura în RJIP.");}finally{setSupplierPreviewLoading(false)}
  }
@@ -332,21 +334,21 @@ export default function Home(){
    <tbody>{supplierMessages.map((m,i)=><tr key={m.id||i}><td>{m.date?new Date(m.date).toLocaleString("ro-RO"):"—"}</td><td>{m.supplierCif||"—"}</td><td>{m.type||"—"}</td><td>{m.details||"—"}</td><td>{m.id||"—"}</td><td><button className="btn secondary" disabled={!m.id||supplierPreviewLoading} onClick={()=>previewSupplierInvoice(m)}>Vezi factura</button><button className="btn secondary" style={{marginTop:6}} disabled={!m.id} onClick={()=>downloadSupplierXml(m)}>XML</button></td></tr>)}</tbody></table></div>
   </div>}
   {supplierPreview&&<div className="panel" style={{marginTop:18,border:"1px solid #b8cbe3"}}>
-   <h2>Factura furnizor – previzualizare</h2>
-   <div className="grid">
-    <div><p><b>Furnizor:</b> {supplierPreview.invoice.supplierName||supplierPreview.message?.supplierCif||"—"}</p><p><b>CUI:</b> {supplierPreview.invoice.supplierCif||supplierPreview.message?.supplierCif||"—"}</p><p><b>Factură:</b> {supplierPreview.invoice.invoiceNumber||"—"}</p><p><b>Data:</b> {supplierPreview.invoice.invoiceDate||"—"}</p></div>
-    <div><p><b>Scadență:</b> {supplierPreview.invoice.dueDate||"—"}</p><p><b>Total:</b> {money(Number(supplierPreview.invoice.total||0))} {supplierPreview.invoice.currency||"RON"}</p><p><b>Articole:</b> {supplierPreview.invoice.lines?.length||0}</p></div>
+   <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",gap:12,flexWrap:"wrap"}}><div><h2>Factura furnizor – previzualizare</h2><p className="muted">Verifică datele și pozițiile înainte să o înregistrezi în RJIP.</p></div><button className="btn secondary" onClick={()=>setSupplierPreview(null)}>Închide</button></div>
+   <div className="grid" style={{marginTop:12}}>
+    <div className="panel" style={{boxShadow:"none",padding:14,margin:0}}><h3>Furnizor</h3><p><b>{supplierPreview.invoice.supplierName||supplierPreview.message?.supplierCif||"—"}</b></p><p>CUI: {supplierPreview.invoice.supplierCif||supplierPreview.message?.supplierCif||"—"}</p><p>{supplierPreview.invoice.supplierAddress||"Adresă indisponibilă în XML"}</p><p><b>Factură:</b> {supplierPreview.invoice.invoiceNumber||"—"}</p><p><b>Data emiterii:</b> {supplierPreview.invoice.invoiceDate||"—"}</p><p><b>Scadență:</b> {supplierPreview.invoice.dueDate||"—"}</p></div>
+    <div className="panel" style={{boxShadow:"none",padding:14,margin:0}}><h3>Destinatar</h3><p><b>{supplierPreview.invoice.customerName||"—"}</b></p><p>CUI: {supplierPreview.invoice.customerCif||"—"}</p><p>{supplierPreview.invoice.customerAddress||"Adresă indisponibilă în XML"}</p><div style={{marginTop:12,borderTop:"1px solid #e8edf3",paddingTop:10}}><p>Valoare fără TVA: <b>{money(Number(supplierPreview.invoice.subtotal||0))}</b></p><p>TVA: <b>{money(Number(supplierPreview.invoice.vatTotal||0))}</b></p><p style={{fontSize:17}}>Total factură: <b>{money(Number(supplierPreview.invoice.total||0))}</b> <span className="muted">{supplierPreview.invoice.currency||"RON"}</span></p><p>Poziții: {supplierPreview.invoice.lines?.length||0}</p></div></div>
    </div>
-   {supplierPreview.invoice.lines?.length>0&&<div className="scroll"><table className="table"><thead><tr><th>Descriere</th><th>Cantitate</th><th>Preț unitar</th><th>Total</th></tr></thead><tbody>{supplierPreview.invoice.lines.map((line:any,i:number)=><tr key={i}><td>{line.description}</td><td>{line.quantity||"—"}</td><td>{line.unitPrice||"—"}</td><td>{line.lineTotal||"—"}</td></tr>)}</tbody></table></div>}
-   <h3>Detalii pentru RJIP</h3>
+   {supplierPreview.invoice.lines?.length>0&&<div style={{marginTop:18}}><h3>Produse și servicii</h3><div className="scroll"><table className="table" style={{minWidth:850}}><thead><tr><th>Descriere</th><th>Cod</th><th>Cantitate</th><th>UM</th><th>Preț unitar</th><th>Valoare</th><th>TVA %</th><th>TVA</th></tr></thead><tbody>{supplierPreview.invoice.lines.map((line:any,i:number)=><tr key={i}><td>{line.description||"—"}</td><td>{line.itemCode||"—"}</td><td>{line.quantity||"—"}</td><td>{line.unit||"—"}</td><td>{line.unitPrice||"—"}</td><td>{line.lineTotal||"—"}</td><td>{line.taxPercent||"—"}</td><td>{line.taxAmount||"—"}</td></tr>)}</tbody></table></div></div>}
+   <h3 style={{marginTop:20}}>Detalii pentru RJIP</h3>
    <div className="grid">
-    <div className="field"><label>Număr bon curier (dacă există)</label><input value={courierReceipt} onChange={e=>setCourierReceipt(e.target.value)} placeholder="Bon / AWB / chitanță"/></div>
-    <div className="field"><label>Data bonului curier</label><input type="date" value={courierReceiptDate} onChange={e=>setCourierReceiptDate(e.target.value)}/></div>
-    <div className="field"><label>Data plății prin bancă</label><input type="date" value={supplierPaymentDate} onChange={e=>setSupplierPaymentDate(e.target.value)}/></div>
+    <div className="field"><label>Metoda de plată efectivă</label><select value={supplierPaymentMethod} onChange={e=>setSupplierPaymentMethod(e.target.value)} required><option value="">Alege metoda</option><option value="numerar">Numerar</option><option value="card">Card / POS</option><option value="banca">Transfer bancar</option><option value="ordin de plata">Ordin de plată</option><option value="alta">Altă metodă</option></select></div>
+    <div className="field"><label>Data plății efective</label><input type="date" value={supplierPaymentDate} onChange={e=>setSupplierPaymentDate(e.target.value)} required/></div>
+    <div className="field"><label>Număr bon / AWB / chitanță curier (opțional)</label><input value={courierReceipt} onChange={e=>setCourierReceipt(e.target.value)} placeholder="Număr document"/></div>
+    <div className="field"><label>Data bonului curier (opțional)</label><input type="date" value={courierReceiptDate} onChange={e=>setCourierReceiptDate(e.target.value)}/></div>
    </div>
-   <p className="muted">Factura se importă ca operațiune în așteptare. Metoda de plată este banca; nu intră în soldurile RJIP până la confirmarea plății.</p>
-   <button className="btn" disabled={supplierPreviewLoading||!supplierPreview.invoice.total} onClick={importSupplierInvoice}>{supplierPreviewLoading?"Se procesează…":"Importă factura în RJIP"}</button>
-   <button className="btn secondary" style={{marginLeft:8}} onClick={()=>setSupplierPreview(null)}>Închide</button>
+   <p className="muted">Alege metoda folosită efectiv și data plății. Factura intră în RJIP în așteptarea verificării; nu o importa înainte să fie achitată.</p>
+   <button className="btn" disabled={supplierPreviewLoading||!supplierPreview.invoice.total||!supplierPaymentMethod||!supplierPaymentDate||String(supplierPreview.invoice.currency||"RON").toUpperCase()!=="RON"} onClick={importSupplierInvoice}>{supplierPreviewLoading?"Se procesează…":"Importă factura în RJIP"}</button>
   </div>}
   <p className="muted" style={{marginTop:18,fontSize:13}}>Documentele preluate nu generează automat cheltuieli în registrul-jurnal. Înregistrarea se va face numai după verificarea documentului și a plății.</p>
  </section>}
