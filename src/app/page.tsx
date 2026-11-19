@@ -81,7 +81,7 @@ export default function Home(){
    const serviceTitle="Servicii conform fișei nr. "+ticket.numar+(serviceDate?" din "+serviceDate:"");
    const description=serviceTitle+"\n"+details.join("\n");
    const calculated=materials.reduce((sum:number,item:any)=>sum+item.qty*item.price,0)+labor.reduce((sum:number,item:any)=>sum+item.qty*item.price,0);
-   const amount=Number(fisa.total||calculated||0);
+   const savedTotal=Number(fisa.total||0);const amount=savedTotal>0?savedTotal:calculated;
    const newLine={descriere:description,cantitate:1,unitate:"serviciu",pret_unitar:amount,cota_tva:0};
    setClientId(known?.id||"");setClientName(name);setCui(clientCui);setReg(known?.nr_reg_com||"");setAddress(billAddress);setEmail(clientEmail);setPhone(clientPhone);
    setLines([newLine]);setDate(today());setDue("");setNotes("Servicii conform fișei de intervenție "+ticket.numar);
@@ -154,7 +154,7 @@ export default function Home(){
  function pickClient(id:string){setClientId(id);const c=clients.find(x=>x.id===id);if(c){setClientName(c.denumire);setCui(c.cui||"");setReg(c.nr_reg_com||"");setAddress(c.adresa||"");setEmail(c.email||"");setPhone(c.telefon||"")}else{setClientName("");setCui("");setReg("");setAddress("");setEmail("");setPhone("")}}
  async function saveClient(e:any){e.preventDefault();setError("");const {data,error}=await supabase.rpc("app_save_client",{p_client:newClient});if(error){setError(error.message);return}await loadData();pickClient(data.id);setNotice("Client salvat.");setTab("new")}
  function previewDraft(){setError("");const items=lines.map((l,i)=>{const value=Math.round(Number(l.cantitate||0)*Number(l.pret_unitar||0)*100)/100;return {...l,id:"draft-"+i,valoare_totala:value}});const net=items.reduce((a,x)=>a+Number(x.valoare_totala),0);setCurrent({isDraftPreview:true,serie:"SE",numar:"—",data_document:date,data_scadenta:due,client_denumire:clientName||"Client",client_cui:cui,client_nr_reg_com:reg,client_adresa:address,client_email:email,items,total_fara_tva:net,total_tva:0,total:net,observatii:notes});setTab("preview")}
- async function issueInvoice(){setError("");setNotice("");if(!clientName.trim()){setError("Completează denumirea clientului.");return}if(lines.some(l=>!l.descriere.trim()||Number(l.cantitate)<=0)){setError("Verifică pozițiile facturii.");return}
+ async function issueInvoice(){setError("");setNotice("");if(!clientName.trim()){setError("Completează denumirea clientului.");return}if(lines.some(l=>!l.descriere.trim()||Number(l.cantitate)<=0)){setError("Verifică pozițiile facturii.");return}if(lines.some(l=>Number(l.pret_unitar)<0)||totals.total<=0){setError("Totalul facturii trebuie să fie mai mare decât zero.");return}
  const payload={id:clientId||null,tip_client:"firma",denumire:clientName,cui,nr_reg_com:reg,adresa:address,email,telefon:phone,tara:"România"};
  const linePayload=lines.map((l,i)=>({...l,cota_tva:0,pozitie:i+1}));
  const {data,error}=sourceRef
