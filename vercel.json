@@ -1,0 +1,11 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "schedules": {
+    "anaf-supplier-invoices": {
+      "schedule": "0 7 * * *",
+      "timezone": "Europe/Bucharest",
+      "path": "/api/cron/anaf-sync",
+      "requestMethod": "POST"
+    }
+  }
+}
