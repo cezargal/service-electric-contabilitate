@@ -55,6 +55,14 @@ export default function Home(){
   window.addEventListener("keydown",onKeyDown);
   return()=>{document.body.style.overflow=previousOverflow;window.removeEventListener("keydown",onKeyDown)};
  },[supplierPreview]);
+ useEffect(()=>{
+  if(!archiveInvoice)return;
+  const previousOverflow=document.body.style.overflow;
+  document.body.style.overflow="hidden";
+  const onKeyDown=(event:KeyboardEvent)=>{if(event.key==="Escape")setArchiveInvoice(null)};
+  window.addEventListener("keydown",onKeyDown);
+  return()=>{document.body.style.overflow=previousOverflow;window.removeEventListener("keydown",onKeyDown)};
+ },[archiveInvoice]);
  async function loadData(){setError("");const {data,error}=await supabase.rpc("app_bootstrap");if(error){setError(error.message);return}setClients(data?.clients||[]);setInvoices(data?.invoices||[])}
 
  async function loadInterventionSource(ticketId:string,fisaId:string){
@@ -290,8 +298,9 @@ export default function Home(){
    <td><div style={{display:"flex",gap:6,flexWrap:"wrap"}}>{d.has_xml&&<button className="btn" disabled={archiveInvoiceLoading} onClick={()=>openArchiveInvoice(d)}>Vezi factura</button>}<button className="btn secondary" disabled={archiveBusyId===d.anaf_message_id} onClick={()=>downloadArchivedXml(d)}>{archiveBusyId===d.anaf_message_id?"Se preia…":d.has_xml?"Descarcă XML original":"Preia XML"}</button></div><div className="muted" style={{marginTop:5}}>ID {d.anaf_message_id}</div></td>
   </tr>)}</tbody></table>{!anafArchive.length&&<p className="muted">Arhiva este goală. Preia facturile din SPV pentru a salva mesajele și documentele originale.</p>}</div>
  </section>}
- {archiveInvoice&&<section className="panel" style={{marginTop:18,border:"1px solid #b8cbe3"}}>
-  <div className="no-print" style={{display:"flex",justifyContent:"space-between",alignItems:"center",gap:12,flexWrap:"wrap"}}><div><h2 style={{margin:0}}>Factura primită – {archiveInvoice.invoice?.invoice_number||"SPV"}</h2><p className="muted">Format A4 pentru tipărire, cu date preluate din XML-ul original ANAF.</p></div><div style={{display:"flex",gap:8}}><button className="btn secondary" onClick={()=>window.print()}>Tipărește A4 / Salvează PDF</button><button className="btn secondary" onClick={()=>setArchiveInvoice(null)}>Închide</button></div></div>
+ {archiveInvoice&&<div role="presentation" onMouseDown={e=>{if(e.target===e.currentTarget)setArchiveInvoice(null)}} style={{position:"fixed",inset:0,zIndex:1000,background:"rgba(7,26,56,.48)",padding:16,display:"grid",placeItems:"center",overflowY:"auto"}}>
+  <section role="dialog" aria-modal="true" aria-labelledby="archiveInvoiceTitle" className="panel" style={{width:"min(1100px,100%)",maxHeight:"calc(100vh - 32px)",overflowY:"auto",margin:0,border:"1px solid #b8cbe3"}}>
+  <div className="no-print" style={{display:"flex",justifyContent:"space-between",alignItems:"center",gap:12,flexWrap:"wrap"}}><div><h2 id="archiveInvoiceTitle" style={{margin:0}}>Factura primită – {archiveInvoice.invoice?.invoice_number||"SPV"}</h2><p className="muted">Previzualizare din arhiva SPV · format A4 pentru tipărire.</p></div><div style={{display:"flex",gap:8}}><button className="btn secondary" onClick={()=>window.print()}>Tipărește A4 / Salvează PDF</button><button className="btn secondary" onClick={()=>setArchiveInvoice(null)}>Închide</button></div></div>
   <div className="invoice-print" style={{maxWidth:850,margin:"18px auto",padding:24,color:"#111",background:"#fff",fontFamily:"Arial,Helvetica,sans-serif",fontSize:13}}>
    <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",gap:24,borderBottom:"1px solid #333",paddingBottom:14,marginBottom:18}}>
     <div><div style={{fontSize:12,fontWeight:700,color:"#1761a0",letterSpacing:1}}>RO e-Factura · ANAF</div><div style={{fontSize:25,fontWeight:700,marginTop:5}}>FACTURĂ</div><div style={{fontSize:12,color:"#555",marginTop:4}}>Document electronic preluat din SPV</div></div>
@@ -323,7 +332,8 @@ export default function Home(){
    {archivePayments.length>0&&<div className="scroll"><table className="table"><thead><tr><th>Data</th><th>Modalitate</th><th>Referință</th><th>Sumă</th></tr></thead><tbody>{archivePayments.map((p:any)=><tr key={p.id}><td>{p.payment_date}</td><td>{p.method==="numerar"?"Numerar":p.method==="card"?"Card / POS":"OP / Transfer bancar"}</td><td>{p.reference||"—"}</td><td>{money(Number(p.amount))}</td></tr>)}</tbody></table></div>}
    <p className="muted">Plățile sunt evidențiate separat. Înregistrarea în Registrul-jurnal se face automat la data plății efective.</p>
   </div>
- </section>}
+  </section>
+ </div>}
  {tab==="spv"&&<section className="panel no-print">
   <h1>Facturi furnizori – ANAF SPV</h1>
   <p className="muted">Certificatul ANAF este conectat. Preia facturile primite în SPV și verifică documentele înainte de asocierea lor cu plățile din registrul-jurnal.</p>
