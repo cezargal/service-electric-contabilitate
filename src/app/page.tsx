@@ -29,7 +29,7 @@ export default function Home(){
  const [archiveInvoice,setArchiveInvoice]=useState<any>(null),[archiveInvoiceLoading,setArchiveInvoiceLoading]=useState(false),[archivePayments,setArchivePayments]=useState<any[]>([]);
  const [archivePayDate,setArchivePayDate]=useState(""),[archivePayAmount,setArchivePayAmount]=useState(""),[archivePayMethod,setArchivePayMethod]=useState("banca"),[archivePayReference,setArchivePayReference]=useState(""),[archivePayNotes,setArchivePayNotes]=useState(""),[archivePaySaving,setArchivePaySaving]=useState(false);
  const [oblioEmail,setOblioEmail]=useState(""),[oblioSecret,setOblioSecret]=useState(""),[oblioCif,setOblioCif]=useState("43594993"),[oblioLoading,setOblioLoading]=useState(false),[oblioResult,setOblioResult]=useState<any>(null);
- const [oblioHistory,setOblioHistory]=useState<any>({documents:[],clients:0,collections:0});
+ const [oblioHistory,setOblioHistory]=useState<any>({documents:[],collectionsList:[],clients:0,collections:0});
  const [collectionDate,setCollectionDate]=useState(""),[collectionAmount,setCollectionAmount]=useState(""),[collectionMethod,setCollectionMethod]=useState("banca"),[collectionReference,setCollectionReference]=useState(""),[collectionNotes,setCollectionNotes]=useState(""),[collectionSaving,setCollectionSaving]=useState(false),[collectionKey,setCollectionKey]=useState("");
 
  useEffect(()=>{setDate(today());setCollectionDate(today());setArchivePayDate(today())},[]);
@@ -377,6 +377,14 @@ export default function Home(){
      ))}
     </tbody>
    </table></div>
+  </div>
+  <div className="panel" style={{marginTop:18}}>
+   <h2>Încasări importate din Oblio</h2>
+   <p className="muted">Afișate separat de registrul de încasări al aplicației. Pentru a evita dublarea, importul nu modifică automat soldul facturilor locale.</p>
+   <div className="scroll"><table className="table">
+    <thead><tr><th>Factura Oblio</th><th>Client</th><th>Data încasării</th><th>Sumă</th><th>Metodă</th><th>Referință</th></tr></thead>
+    <tbody>{(oblioHistory.collectionsList||[]).map((p:any)=><tr key={p.id_extern}><td>{p.serie||"—"} {p.numar||"—"}</td><td>{p.client_denumire||"—"}{p.client_cui?<> <span className="muted">({p.client_cui})</span></>:""}</td><td>{p.data_incasarii||"—"}</td><td>{money(Number(p.suma||0))}</td><td>{p.metoda||"—"}</td><td>{p.referinta||"—"}</td></tr>)}</tbody>
+   </table>{!(oblioHistory.collectionsList||[]).length&&<p className="muted">Nu există încasări importate.</p>}</div>
   </div>
  </>}
  {tab==="new"&&<div className="panel no-print"><h1>Emitere factură</h1><div className="grid"><div><h3>Client</h3><div className="field"><label>Alege client salvat</label><select value={clientId} onChange={e=>pickClient(e.target.value)}><option value="">Client nou / completează manual</option>{clients.map(c=><option key={c.id} value={c.id}>{c.denumire}</option>)}</select></div><div className="field"><label>Denumire client</label><input value={clientName} onChange={e=>setClientName(e.target.value)} required/></div><div className="field"><label>CUI</label><input value={cui} onChange={e=>{setCui(e.target.value);setAnafMessage("");}} onBlur={()=>{if(cui.trim().length>=2&&!anafLoading)lookupAnaf()}} onKeyDown={e=>{if(e.key==="Enter"){e.preventDefault();lookupAnaf()}}} placeholder="Introdu CUI-ul firmei"/><button type="button" className="btn secondary" disabled={anafLoading||!cui.trim()} onClick={lookupAnaf}>{anafLoading?"Se verifică la ANAF…":"Preia datele din ANAF"}</button>{anafMessage&&<p className="muted">{anafMessage}</p>}</div><div className="field"><label>Nr. Registrul Comerțului</label><input value={reg} onChange={e=>setReg(e.target.value)}/></div><div className="field"><label>Adresă</label><input value={address} onChange={e=>setAddress(e.target.value)}/></div><div className="grid"><div className="field"><label>E-mail</label><input value={email} onChange={e=>setEmail(e.target.value)}/></div><div className="field"><label>Telefon</label><input value={phone} onChange={e=>setPhone(e.target.value)}/></div></div></div><div><h3>Detalii factură</h3><div className="field"><label>Data emiterii</label><input type="date" value={date} onChange={e=>setDate(e.target.value)}/></div><div className="field"><label>Data scadenței</label><input type="date" value={due} onChange={e=>setDue(e.target.value)}/></div><div className="field"><label>Observații</label><textarea value={notes} onChange={e=>setNotes(e.target.value)} rows={3}/></div><p className="muted">Seria SE și numărul se alocă automat la emitere.</p></div></div>
