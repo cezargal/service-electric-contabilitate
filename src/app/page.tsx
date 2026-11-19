@@ -157,7 +157,7 @@ export default function Home(){
  async function lookupAnaf(){const clean=cui.replace(/^RO/i,"").replace(/\D/g,"");if(!clean)return;setAnafLoading(true);setAnafMessage("");try{const r=await fetch("/api/anaf/cui",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({cui:clean})});const d=await r.json();if(!r.ok)throw new Error(d.error||"Interogarea ANAF a eșuat.");setClientName(d.denumire||clientName);setReg(d.nrRegCom||reg);setAddress(d.adresa||address);setCui(d.cui||clean);setClientId("");setAnafMessage("Date preluate din ANAF. Verifică informațiile înainte de emitere.");}catch(e:any){setAnafMessage(e.message||"Nu am putut prelua datele.");}finally{setAnafLoading(false)}}
  function pickClient(id:string){setClientId(id);const c=clients.find(x=>x.id===id);if(c){setClientName(c.denumire);setCui(c.cui||"");setReg(c.nr_reg_com||"");setAddress(c.adresa||"");setEmail(c.email||"");setPhone(c.telefon||"")}else{setClientName("");setCui("");setReg("");setAddress("");setEmail("");setPhone("")}}
  async function lookupSavedClientCui(){
-  const clean=String(newClient.cui||"").replace(/^RO/i,"").replace(/\\D/g,"");
+  const clean=String(newClient.cui||"").replace(/^RO/i,"").replace(/\D/g,"");
   if(!clean)return;
   setClientAnafLoading(true);setClientAnafMessage("");
   try{
