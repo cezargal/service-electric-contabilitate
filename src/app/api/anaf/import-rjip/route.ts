@@ -16,7 +16,11 @@ export async function POST(request: NextRequest) {
     const cif = String(body.cif || "").replace(/^RO/i, "").replace(/\\D/g, "");
     const id = String(body.id || "");
     const inv = body.invoice || {};
-    if (cif.length < 2 || !id || !inv.total || Number(inv.total) <= 0) return NextResponse.json({ error: "Datele facturii sunt incomplete." }, { status: 400 });
+    const paymentMethods = ["numerar","card","banca","ordin de plata","alta"];
+    const paymentMethod = String(body.supplierPaymentMethod || "").trim().toLowerCase();
+    const paymentDate = String(body.supplierPaymentDate || "").trim();
+    if (cif.length < 2 || !id || !inv.total || Number(inv.total) <= 0 || String(inv.currency || "RON").toUpperCase() !== "RON") return NextResponse.json({ error: "Datele facturii sunt incomplete sau moneda nu este RON." }, { status: 400 });
+    if (!paymentMethods.includes(paymentMethod) || !/^\d{4}-\d{2}-\d{2}$/.test(paymentDate)) return NextResponse.json({ error: "Alege metoda și data plății efective." }, { status: 400 });
     const { data, error } = await supabase.rpc("import_anaf_supplier_invoice_to_rjip", {
       p_secret: storageSecret,
       p_cif: cif,
@@ -29,7 +33,8 @@ export async function POST(request: NextRequest) {
       p_total: Number(inv.total),
       p_courier_receipt: String(body.courierReceipt || ""),
       p_courier_date: body.courierReceiptDate || null,
-      p_payment_date: body.supplierPaymentDate || null,
+      p_payment_date: paymentDate,
+      p_payment_method: paymentMethod,
     });
     if (error) {
       console.error("ANAF RJIP import failed", error.message);

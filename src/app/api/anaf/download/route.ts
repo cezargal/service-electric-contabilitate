@@ -50,22 +50,67 @@ function xmlValue(xml: string, tag: string): string {
   const match = xml.match(re);
   return (match?.[1] || "").replace(/<[^>]+>/g," ").replace(/&amp;/g,"&").replace(/&lt;/g,"<").replace(/&gt;/g,">").replace(/&quot;/g,'"').replace(/&#39;/g,"'").replace(/\s+/g," ").trim();
 }
+function xmlBlock(xml: string, tag: string): string {
+ const match=xml.match(new RegExp("<(?:[\\w.-]+:)?"+tag+"\\b[^>]*>[\\s\\S]*?<\\/(?:[\\w.-]+:)?"+tag+"\\s*>","i"));
+ return match?.[0]||"";
+}
+function xmlAttribute(xml: string, tag: string, attribute: string): string {
+ const match=xml.match(new RegExp("<(?:[\\w.-]+:)?"+tag+"\\b([^>]*)>","i"));
+ const value=match?.[1]?.match(new RegExp("(?:^|\\s)"+attribute+"=[\"']([^\"']*)[\"']","i"));
+ return value?.[1]||"";
+}
+function amountValue(value: string): number {
+ const normalized=String(value||"").replace(/\s/g,"").replace(",",".");
+ const amount=Number(normalized);
+ return Number.isFinite(amount)?amount:0;
+}
 function parseInvoice(xml: string) {
- const supplier = xml.match(new RegExp("<(?:[\\w.-]+:)?AccountingSupplierParty\\b[\\s\\S]*?<\\/(?:[\\w.-]+:)?AccountingSupplierParty>","i"))?.[0] || xml;
- const supplierName = xmlValue(supplier,"RegistrationName") || xmlValue(supplier,"Name");
- const supplierCif = xmlValue(supplier,"CompanyID");
- const invoiceNumber = xmlValue(xml,"ID");
- const invoiceDate = xmlValue(xml,"IssueDate");
- const dueDate = xmlValue(xml,"DueDate");
- const currency = xmlValue(xml,"DocumentCurrencyCode") || "RON";
- const total = Number((xmlValue(xml,"PayableAmount") || xmlValue(xml,"TaxInclusiveAmount") || "0").replace(",","."));
- const lines = [...xml.matchAll(new RegExp("<(?:[\\w.-]+:)?InvoiceLine\\b[\\s\\S]*?<\\/(?:[\\w.-]+:)?InvoiceLine>","gi"))].map(m=>({
-   description: xmlValue(m[0],"Name") || xmlValue(m[0],"Description") || "Articol",
-   quantity: xmlValue(m[0],"InvoicedQuantity"),
-   unitPrice: xmlValue(m[0],"PriceAmount"),
-   lineTotal: xmlValue(m[0],"LineExtensionAmount")
- }));
- return {supplierName,supplierCif,invoiceNumber,invoiceDate,dueDate,currency,total,lines};
+ const supplier=xmlBlock(xml,"AccountingSupplierParty")||xml;
+ const customer=xmlBlock(xml,"AccountingCustomerParty")||"";
+ const supplierAddress=xmlBlock(supplier,"PostalAddress");
+ const customerAddress=xmlBlock(customer,"PostalAddress");
+ const supplierName=xmlValue(supplier,"RegistrationName")||xmlValue(supplier,"Name");
+ const supplierCif=xmlValue(supplier,"CompanyID");
+ const customerName=xmlValue(customer,"RegistrationName")||xmlValue(customer,"Name");
+ const customerCif=xmlValue(customer,"CompanyID");
+ const invoiceNumber=xmlValue(xml,"ID");
+ const invoiceDate=xmlValue(xml,"IssueDate");
+ const dueDate=xmlValue(xml,"DueDate");
+ const currency=xmlValue(xml,"DocumentCurrencyCode")||"RON";
+ const totalBlock=xmlBlock(xml,"LegalMonetaryTotal")||xml;
+ const payableAmount=amountValue(xmlValue(totalBlock,"PayableAmount"));
+ const taxInclusiveAmount=amountValue(xmlValue(totalBlock,"TaxInclusiveAmount"));
+ const subtotal=amountValue(xmlValue(totalBlock,"TaxExclusiveAmount"));
+ const invoiceTotalsXml=xml.replace(new RegExp("<(?:[\\w.-]+:)?InvoiceLine\\b[\\s\\S]*?<\\/(?:[\\w.-]+:)?InvoiceLine>","gi"),"");
+ const taxTotalBlocks=[...invoiceTotalsXml.matchAll(new RegExp("<(?:[\\w.-]+:)?TaxTotal\\b[\\s\\S]*?<\\/(?:[\\w.-]+:)?TaxTotal>","gi"))].map(m=>m[0]);
+ const vatTotal=taxTotalBlocks.reduce((sum,block)=>sum+amountValue(xmlValue(block,"TaxAmount")),0);
+ const lineBlocks=[...xml.matchAll(new RegExp("<(?:[\\w.-]+:)?InvoiceLine\\b[\\s\\S]*?<\\/(?:[\\w.-]+:)?InvoiceLine>","gi"))];
+ const lines=lineBlocks.map(m=>{
+   const block=m[0],item=xmlBlock(block,"Item");
+   const tax=xmlBlock(item,"ClassifiedTaxCategory")||xmlBlock(block,"TaxCategory")||"";
+   const lineTax=xmlBlock(block,"TaxTotal")||"";
+   return {
+    description:xmlValue(block,"Name")||xmlValue(block,"Description")||"Articol",
+    itemCode:xmlValue(xmlBlock(item,"StandardItemIdentification"),"ID")||xmlValue(xmlBlock(item,"SellersItemIdentification"),"ID")||xmlValue(xmlBlock(item,"BuyersItemIdentification"),"ID"),
+    quantity:xmlValue(block,"InvoicedQuantity"),
+    unit:xmlAttribute(block,"InvoicedQuantity","unitCode")||"—",
+    unitPrice:xmlValue(xmlBlock(block,"Price")||block,"PriceAmount"),
+    lineTotal:xmlValue(block,"LineExtensionAmount"),
+    taxPercent:xmlValue(tax,"Percent"),
+    taxAmount:xmlValue(lineTax,"TaxAmount")
+   };
+ });
+ const linesTotal=lines.reduce((sum,line)=>sum+amountValue(line.lineTotal),0);
+ const total=payableAmount>0?payableAmount:taxInclusiveAmount>0?taxInclusiveAmount:(subtotal+vatTotal)>0?subtotal+vatTotal:linesTotal;
+ const inferredSubtotal=subtotal||linesTotal;
+ const inferredVat=vatTotal||Math.max(0,total-inferredSubtotal);
+ return {
+  supplierName,supplierCif,invoiceNumber,invoiceDate,dueDate,currency,
+  customerName,customerCif,
+  supplierAddress:[xmlValue(supplierAddress,"StreetName"),xmlValue(supplierAddress,"BuildingNumber"),xmlValue(supplierAddress,"CityName"),xmlValue(supplierAddress,"PostalZone")].filter(Boolean).join(", "),
+  customerAddress:[xmlValue(customerAddress,"StreetName"),xmlValue(customerAddress,"BuildingNumber"),xmlValue(customerAddress,"CityName"),xmlValue(customerAddress,"PostalZone")].filter(Boolean).join(", "),
+  subtotal:inferredSubtotal,vatTotal:inferredVat,payableAmount:total,total,lines
+ };
 }
 
 export async function GET(request: NextRequest) {
