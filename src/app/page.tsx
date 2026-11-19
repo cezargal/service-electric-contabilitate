@@ -47,6 +47,14 @@ export default function Home(){
  },[session]);
  useEffect(()=>{if(session&&tab==="import")loadOblioHistory()},[session,tab]);
  useEffect(()=>{if(session&&tab==="archive")loadAnafArchive()},[session,tab]);
+ useEffect(()=>{
+  if(!supplierPreview)return;
+  const previousOverflow=document.body.style.overflow;
+  document.body.style.overflow="hidden";
+  const onKeyDown=(event:KeyboardEvent)=>{if(event.key==="Escape")setSupplierPreview(null)};
+  window.addEventListener("keydown",onKeyDown);
+  return()=>{document.body.style.overflow=previousOverflow;window.removeEventListener("keydown",onKeyDown)};
+ },[supplierPreview]);
  async function loadData(){setError("");const {data,error}=await supabase.rpc("app_bootstrap");if(error){setError(error.message);return}setClients(data?.clients||[]);setInvoices(data?.invoices||[])}
 
  async function loadInterventionSource(ticketId:string,fisaId:string){
@@ -333,8 +341,8 @@ export default function Home(){
    <div className="scroll"><table className="table"><thead><tr><th>Data</th><th>Furnizor (CUI)</th><th>Tip</th><th>Detalii</th><th>ID ANAF</th><th>XML</th></tr></thead>
    <tbody>{supplierMessages.map((m,i)=><tr key={m.id||i}><td>{m.date?new Date(m.date).toLocaleString("ro-RO"):"—"}</td><td>{m.supplierCif||"—"}</td><td>{m.type||"—"}</td><td>{m.details||"—"}</td><td>{m.id||"—"}</td><td><button className="btn secondary" disabled={!m.id||supplierPreviewLoading} onClick={()=>previewSupplierInvoice(m)}>Vezi factura</button><button className="btn secondary" style={{marginTop:6}} disabled={!m.id} onClick={()=>downloadSupplierXml(m)}>XML</button></td></tr>)}</tbody></table></div>
   </div>}
-  {supplierPreview&&<div className="panel" style={{marginTop:18,border:"1px solid #b8cbe3"}}>
-   <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",gap:12,flexWrap:"wrap"}}><div><h2>Factura furnizor – previzualizare</h2><p className="muted">Verifică datele și pozițiile înainte să o înregistrezi în RJIP.</p></div><button className="btn secondary" onClick={()=>setSupplierPreview(null)}>Închide</button></div>
+  {supplierPreview&&<div role="presentation" onMouseDown={e=>{if(e.target===e.currentTarget)setSupplierPreview(null)}} style={{position:"fixed",inset:0,zIndex:1000,background:"rgba(7,26,56,.48)",padding:16,display:"grid",placeItems:"center",overflowY:"auto"}}><div role="dialog" aria-modal="true" aria-labelledby="supplierPreviewTitle" className="panel" style={{width:"min(1100px,100%)",maxHeight:"calc(100vh - 32px)",overflowY:"auto",margin:0,border:"1px solid #b8cbe3"}}>
+   <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",gap:12,flexWrap:"wrap"}}><div><h2 id="supplierPreviewTitle">Factura furnizor – previzualizare</h2><p className="muted">Verifică datele și pozițiile înainte să o înregistrezi în RJIP.</p></div><button className="btn secondary" onClick={()=>setSupplierPreview(null)}>Închide</button></div>
    <div className="grid" style={{marginTop:12}}>
     <div className="panel" style={{boxShadow:"none",padding:14,margin:0}}><h3>Furnizor</h3><p><b>{supplierPreview.invoice.supplierName||supplierPreview.message?.supplierCif||"—"}</b></p><p>CUI: {supplierPreview.invoice.supplierCif||supplierPreview.message?.supplierCif||"—"}</p><p>{supplierPreview.invoice.supplierAddress||"Adresă indisponibilă în XML"}</p><p><b>Factură:</b> {supplierPreview.invoice.invoiceNumber||"—"}</p><p><b>Data emiterii:</b> {supplierPreview.invoice.invoiceDate||"—"}</p><p><b>Scadență:</b> {supplierPreview.invoice.dueDate||"—"}</p></div>
     <div className="panel" style={{boxShadow:"none",padding:14,margin:0}}><h3>Destinatar</h3><p><b>{supplierPreview.invoice.customerName||"—"}</b></p><p>CUI: {supplierPreview.invoice.customerCif||"—"}</p><p>{supplierPreview.invoice.customerAddress||"Adresă indisponibilă în XML"}</p><div style={{marginTop:12,borderTop:"1px solid #e8edf3",paddingTop:10}}><p>Valoare fără TVA: <b>{money(Number(supplierPreview.invoice.subtotal||0))}</b></p><p>TVA: <b>{money(Number(supplierPreview.invoice.vatTotal||0))}</b></p><p style={{fontSize:17}}>Total factură: <b>{money(Number(supplierPreview.invoice.total||0))}</b></p><p>Poziții: {supplierPreview.invoice.lines?.length||0}</p></div></div>
@@ -349,7 +357,7 @@ export default function Home(){
    </div>
    <p className="muted">Alege metoda folosită efectiv și data plății. Factura intră în RJIP în așteptarea verificării; nu o importa înainte să fie achitată.</p>
    <button className="btn" disabled={supplierPreviewLoading||!supplierPreview.invoice.total||!supplierPaymentMethod||!supplierPaymentDate||String(supplierPreview.invoice.currency||"RON").toUpperCase()!=="RON"} onClick={importSupplierInvoice}>{supplierPreviewLoading?"Se procesează…":"Importă factura în RJIP"}</button>
-  </div>}
+  </div></div>}
   <p className="muted" style={{marginTop:18,fontSize:13}}>Documentele preluate nu generează automat cheltuieli în registrul-jurnal. Înregistrarea se va face numai după verificarea documentului și a plății.</p>
  </section>}
  {tab==="rjip"&&<section className="panel no-print" style={{padding:0,overflow:"hidden"}}><iframe title="Registru-jurnal" src="/registru-jurnal.html" onLoad={e=>{const frame=e.currentTarget;const doc=frame.contentDocument;if(!doc)return;const resize=()=>{frame.style.height=Math.max(doc.documentElement.scrollHeight,doc.body.scrollHeight)+"px"};resize();new ResizeObserver(resize).observe(doc.body);}} style={{display:"block",width:"100%",height:"1200px",border:0,background:"#f3f6fa"}}/></section>}
