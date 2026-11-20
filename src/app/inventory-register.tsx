@@ -7,7 +7,7 @@ type InventoryItem = {
  id:number; product_name:string; product_code?:string|null; measuring_unit?:string|null; quantity:number; unit_cost:number;
  purchase_date:string; inventory_number?:string|null; serial_number?:string|null; status:"in_stoc"|"in_folosinta"|"scos_din_uz"|"casat";
  date_put_into_use?:string|null; assigned_to?:string|null; location?:string|null; date_retired?:string|null; notes?:string|null;
- supplier_name?:string|null; invoice_number?:string|null; invoice_series?:string|null; invoice_date?:string|null;
+ supplier_name?:string|null; supplier_cif?:string|null; invoice_number?:string|null; invoice_series?:string|null; invoice_date?:string|null;
 };
 type Props = { sourceInvoice:any; onSourceConsumed:()=>void };
 const today=()=>new Date().toISOString().slice(0,10);
