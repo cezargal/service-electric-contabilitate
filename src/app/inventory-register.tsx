@@ -57,6 +57,7 @@ export default function InventoryRegister({sourceInvoice,onSourceConsumed}:Props
  const chosenLine=lines[Number(lineIndex)]||null;
  const yearObjects=useMemo(()=>{const end=String(year)+"-12-31";return objects.filter(x=>x.purchase_date<=end&&(!x.date_retired||x.date_retired>end));},[objects,year]);
  const stockTotals=stockProducts;
+ const filteredStockProducts=useMemo<StockProduct[]>(()=>{const query=stockSearch.trim().toLocaleLowerCase("ro");if(!query)return stockTotals;return stockTotals.filter((x:StockProduct)=>`${x.denumire} ${x.cod||""}`.toLocaleLowerCase("ro").includes(query))},[stockTotals,stockSearch]);
  async function addFromInvoice(event:any){
   event.preventDefault();setError("");setNotice("");
   if(!sourceInvoice||!chosenLine){setError("Alege o poziție de pe factura SPV.");return}
