@@ -42,7 +42,7 @@ export default function Home(){
  useEffect(()=>{let active=true;if(!session){setMfaState("checking");return()=>{active=false}}setMfaState("checking");setMfaError("");(async()=>{try{const {data:assurance,error:assuranceError}=await supabase.auth.mfa.getAuthenticatorAssuranceLevel();if(assuranceError)throw assuranceError;if(!active)return;if(assurance?.currentLevel==="aal2"){setMfaState("ready");return}const {data:factors,error:factorsError}=await supabase.auth.mfa.listFactors();if(factorsError)throw factorsError;if(!active)return;const verified=(factors?.totp||[]).find((factor:any)=>factor.status==="verified");if(verified){setMfaFactorId(verified.id);setMfaQr("");setMfaSecret("");setMfaState("challenge")}else{setMfaFactorId("");setMfaQr("");setMfaSecret("");setMfaState("setup")}}catch(e:any){if(active){setMfaError(e?.message||"Nu am putut verifica autentificarea în doi pași.");setMfaState("error")}}})();return()=>{active=false}},[session?.access_token,mfaRetry]);
  useEffect(()=>{if(session&&mfaState==="ready")loadData()},[session,mfaState]);
  useEffect(()=>{
-  if(!session)return;
+  if(!session||mfaState!=="ready")return;
   const params=new URLSearchParams(window.location.search);
   const ticketId=params.get("source_ticket_id"),fisaId=params.get("source_fisa_id"),invoiceId=params.get("invoice_id");
   const key=ticketId&&fisaId?"source:"+ticketId+":"+fisaId:invoiceId?"invoice:"+invoiceId:"";
@@ -50,9 +50,9 @@ export default function Home(){
   deepLinkHandled.current=key;
   if(ticketId&&fisaId){loadInterventionSource(ticketId,fisaId);return}
   if(invoiceId){openInvoice(invoiceId).then(()=>window.history.replaceState(null,"",window.location.pathname))}
- },[session]);
- useEffect(()=>{if(session&&tab==="import")loadOblioHistory()},[session,tab]);
- useEffect(()=>{if(session&&tab==="archive")loadAnafArchive()},[session,tab]);
+ },[session,mfaState]);
+ useEffect(()=>{if(session&&mfaState==="ready"&&tab==="import")loadOblioHistory()},[session,mfaState,tab]);
+ useEffect(()=>{if(session&&mfaState==="ready"&&tab==="archive")loadAnafArchive()},[session,mfaState,tab]);
  useEffect(()=>{
   if(!supplierPreview)return;
   const previousOverflow=document.body.style.overflow;
