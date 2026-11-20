@@ -60,7 +60,7 @@ function invoiceMetadata(xml: string) {
     const itemCode = readTag(readBlock(item, "StandardItemIdentification"), "ID")
       || readTag(readBlock(item, "SellersItemIdentification"), "ID")
       || readTag(readBlock(item, "BuyersItemIdentification"), "ID")
-      || description.match(/^\\s*([A-Z0-9][A-Z0-9._/-]{2,})\\s*[-–]\\s*/i)?.[1]
+      || description.match(/^\s*([A-Z0-9][A-Z0-9._/-]{2,})\s*[-–]\s*/i)?.[1]
       || "";
     return {
       description,
