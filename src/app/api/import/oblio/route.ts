@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@supabase/supabase-js";
-import { OWNER_USER_ID } from "@/lib/owner-auth";
+import { authorizeOwner } from "@/lib/owner-auth";
 
 const api = "https://www.oblio.eu/api";
 
@@ -18,17 +17,8 @@ async function oblioGet(path: string, token: string) {
 
 export async function POST(request: NextRequest) {
   try {
-    const authorization = request.headers.get("authorization") || "";
-    const jwt = authorization.replace(/^Bearer\s+/i, "");
-    if (!jwt) return NextResponse.json({ error: "Sesiune lipsă." }, { status: 401 });
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-    const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-    if (!supabaseUrl || !anonKey) return NextResponse.json({ error: "Configurarea aplicației este incompletă." }, { status: 500 });
-    const supabase = createClient(supabaseUrl, anonKey, { auth: { persistSession: false, autoRefreshToken: false } });
-    const { data: authData, error: authError } = await supabase.auth.getUser(jwt);
-    if (authError || !authData.user || authData.user.id !== OWNER_USER_ID) {
-      return NextResponse.json({ error: "Acces neautorizat." }, { status: 403 });
-    }
+    const authorization = await authorizeOwner(request);
+    if (!authorization.ok) return NextResponse.json({ error: authorization.error }, { status: authorization.status });
 
     const body = await request.json();
     const clientId = String(body?.clientId || "").trim();

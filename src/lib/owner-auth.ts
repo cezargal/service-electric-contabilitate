@@ -29,5 +29,9 @@ export async function authorizeOwner(request: NextRequest): Promise<
   if (data.user.id !== OWNER_USER_ID) {
     return { ok: false, status: 403, error: "Acces neautorizat." };
   }
+  const { data: assurance, error: assuranceError } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel(token);
+  if (assuranceError || assurance?.currentLevel !== "aal2") {
+    return { ok: false, status: 403, error: "Confirmă autentificarea cu doi factori pentru a continua." };
+  }
   return { ok: true };
 }

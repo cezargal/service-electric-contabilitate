@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import { authorizeOwner } from "@/lib/owner-auth";
 
 export async function POST(request: NextRequest) {
   const storageSecret = process.env.ANAF_STORAGE_SECRET;
@@ -8,9 +9,9 @@ export async function POST(request: NextRequest) {
   const authorization = request.headers.get("authorization") || "";
   const access = authorization.startsWith("Bearer ") ? authorization.slice(7) : "";
   if (!storageSecret || !supabaseUrl || !supabaseAnonKey || !access) return NextResponse.json({ error: "Autentificare necesară." }, { status: 401 });
+  const authorizationResult = await authorizeOwner(request);
+  if (!authorizationResult.ok) return NextResponse.json({ error: authorizationResult.error }, { status: authorizationResult.status });
   const supabase = createClient(supabaseUrl, supabaseAnonKey, { global: { headers: { Authorization: `Bearer ${access}` } }, auth: { persistSession: false, autoRefreshToken: false } });
-  const { data: userData, error: authError } = await supabase.auth.getUser(access);
-  if (authError || !userData.user) return NextResponse.json({ error: "Sesiunea aplicației a expirat. Autentifică-te din nou." }, { status: 401 });
   try {
     const body = await request.json();
     const cif = String(body.cif || "").replace(/^RO/i, "").replace(/\\D/g, "");
