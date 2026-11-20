@@ -9,6 +9,7 @@ create table if not exists public.receptii_stoc (
   supplier_name text,
   supplier_cif text,
   line_index integer not null,
+  product_id bigint not null references public.produse_catalog(id) on delete restrict,
   product_name text not null,
   product_code text,
   measuring_unit text,
@@ -24,7 +25,7 @@ create table if not exists public.receptii_stoc (
   constraint receptii_stoc_source_line_unique unique (anaf_cif,anaf_message_id,line_index)
 );
 
-create index if not exists receptii_stoc_product_idx on public.receptii_stoc(product_name);
+create index if not exists receptii_stoc_product_idx on public.receptii_stoc(product_id);
 create index if not exists receptii_stoc_purchase_date_idx on public.receptii_stoc(purchase_date);
 create index if not exists receptii_stoc_invoice_idx on public.receptii_stoc(anaf_cif,anaf_message_id);
 
@@ -34,3 +35,76 @@ grant usage,select on sequence public.receptii_stoc_id_seq to authenticated;
 drop policy if exists receptii_stoc_admin_all on public.receptii_stoc;
 create policy receptii_stoc_admin_all on public.receptii_stoc
   for all to authenticated using (is_staff_admin()) with check (is_staff_admin());
+
+create or replace function public.app_register_supplier_stock_receipt(
+  p_anaf_cif text,
+  p_anaf_message_id text,
+  p_line_index integer,
+  p_invoice_series text,
+  p_invoice_number text,
+  p_invoice_date date,
+  p_supplier_name text,
+  p_supplier_cif text,
+  p_product_name text,
+  p_product_code text,
+  p_measuring_unit text,
+  p_category text,
+  p_quantity numeric,
+  p_unit_cost numeric,
+  p_purchase_date date,
+  p_location text,
+  p_notes text
+) returns jsonb
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_product_id bigint;
+  v_product_code text;
+  v_receipt_id bigint;
+begin
+  if auth.uid() is null or not public.is_staff_admin() then
+    raise exception 'Acces neautorizat';
+  end if;
+  if coalesce(trim(p_anaf_cif),'')='' or coalesce(trim(p_anaf_message_id),'')='' or p_line_index < 0 then
+    raise exception 'Factura SPV sau poziția nu este validă';
+  end if;
+  if coalesce(trim(p_product_name),'')='' or p_quantity is null or p_quantity<=0 or p_unit_cost is null or p_unit_cost<0 then
+    raise exception 'Produsul, cantitatea sau costul nu sunt valide';
+  end if;
+  if p_category not in ('material','consumabil') then raise exception 'Categoria nu este validă'; end if;
+
+  perform pg_advisory_xact_lock(hashtext(p_anaf_cif||':'||p_anaf_message_id||':'||p_line_index));
+  if exists(select 1 from public.receptii_stoc where anaf_cif=p_anaf_cif and anaf_message_id=p_anaf_message_id and line_index=p_line_index) then
+    raise exception 'Poziția din factura SPV a fost deja recepționată';
+  end if;
+
+  if nullif(trim(p_product_code),'') is not null then
+    select id into v_product_id from public.produse_catalog where cod=trim(p_product_code) for update;
+  end if;
+  if v_product_id is null then
+    select id into v_product_id from public.produse_catalog where lower(trim(denumire))=lower(trim(p_product_name)) and activ=true order by id limit 1 for update;
+  end if;
+  if v_product_id is null then
+    v_product_code:=coalesce(nullif(trim(p_product_code),''),'SPV-'||left(md5(p_anaf_cif||':'||p_anaf_message_id||':'||p_line_index),16));
+    insert into public.produse_catalog(denumire,cod,pret_unitar,activ,stoc,stoc_minim)
+    values(trim(p_product_name),v_product_code,round(p_unit_cost,2),true,0,0)
+    returning id into v_product_id;
+  end if;
+
+  insert into public.receptii_stoc(cui_entitate,anaf_message_id,anaf_cif,invoice_series,invoice_number,invoice_date,supplier_name,supplier_cif,line_index,product_id,product_name,product_code,measuring_unit,categorie,quantity,unit_cost,purchase_date,location,notes,created_by)
+  values('43594993',p_anaf_message_id,p_anaf_cif,p_invoice_series,p_invoice_number,p_invoice_date,p_supplier_name,p_supplier_cif,p_line_index,v_product_id,trim(p_product_name),nullif(trim(p_product_code),''),p_measuring_unit,p_category,p_quantity,p_unit_cost,coalesce(p_purchase_date,current_date),nullif(trim(p_location),''),nullif(trim(p_notes),''),auth.uid())
+  returning id into v_receipt_id;
+
+  insert into public.stoc_miscari(produs_id,tip,cantitate,motiv,created_by)
+  values(v_product_id,'intrare',p_quantity,'Recepție factură SPV '||coalesce(p_invoice_series||' ','')||coalesce(p_invoice_number,p_anaf_message_id),auth.uid());
+
+  update public.produse_catalog set stoc=coalesce(stoc,0)+p_quantity,pret_unitar=round(p_unit_cost,2),updated_at=now() where id=v_product_id;
+
+  return jsonb_build_object('receipt_id',v_receipt_id,'product_id',v_product_id,'quantity',p_quantity);
+end
+$$;
+
+revoke all on function public.app_register_supplier_stock_receipt(text,text,integer,text,text,date,text,text,text,text,text,text,numeric,numeric,date,text,text) from public;
+grant execute on function public.app_register_supplier_stock_receipt(text,text,integer,text,text,date,text,text,text,text,text,text,numeric,numeric,date,text,text) to authenticated;
