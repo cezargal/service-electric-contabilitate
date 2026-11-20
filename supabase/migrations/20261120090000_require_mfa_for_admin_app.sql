@@ -22,6 +22,8 @@ declare
   updated_definition text;
   old_guard text := 'if auth.uid() is distinct from ''18bd609e-4ad7-4896-bb6a-b5a1358f7495''::uuid then';
   new_guard text := 'if auth.uid() is distinct from ''18bd609e-4ad7-4896-bb6a-b5a1358f7495''::uuid or coalesce(auth.jwt()->>''aal'',''aal1'') <> ''aal2'' then';
+  old_vuid_guard text := 'if v_uid is distinct from ''18bd609e-4ad7-4896-bb6a-b5a1358f7495''::uuid then';
+  new_vuid_guard text := 'if v_uid is distinct from ''18bd609e-4ad7-4896-bb6a-b5a1358f7495''::uuid or coalesce(auth.jwt()->>''aal'',''aal1'') <> ''aal2'' then';
 begin
   for f in
     select p.oid
@@ -33,6 +35,9 @@ begin
   loop
     definition := pg_get_functiondef(f.oid);
     updated_definition := replace(definition, old_guard, new_guard);
+    if updated_definition = definition then
+      updated_definition := replace(definition, old_vuid_guard, new_vuid_guard);
+    end if;
     if updated_definition = definition then
       raise exception 'Nu am putut adăuga verificarea MFA pentru funcția %', f.oid::regprocedure;
     end if;
