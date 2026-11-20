@@ -56,8 +56,16 @@ function invoiceMetadata(xml: string) {
     const tax = readBlock(line, "TaxTotal");
     const taxSubtotal = readBlock(tax, "TaxSubtotal");
     const taxCategory = readBlock(taxSubtotal, "TaxCategory") || readBlock(line, "TaxCategory") || readBlock(item, "ClassifiedTaxCategory");
+    const description = readTag(item, "Name") || readTag(item, "Description") || readTag(line, "Description") || "Articol";
+    const itemCode = readTag(readBlock(item, "StandardItemIdentification"), "ID")
+      || readTag(readBlock(item, "SellersItemIdentification"), "ID")
+      || readTag(readBlock(item, "BuyersItemIdentification"), "ID")
+      || description.match(/^\s*([A-Z0-9][A-Z0-9._/-]{2,})\s*[-–]\s*/i)?.[1]
+      || "";
     return {
-      description: readTag(item, "Name") || readTag(item, "Description") || readTag(line, "Description") || "Articol",
+      description,
+      product_code: itemCode,
+      itemCode,
       quantity: quantityMatch ? decodeXml(quantityMatch[2]) : "",
       unit: quantityMatch ? readAttr(quantityMatch[0], "InvoicedQuantity", "unitCode") : "",
       unit_price: readTag(price, "PriceAmount") || readTag(line, "PriceAmount"),
