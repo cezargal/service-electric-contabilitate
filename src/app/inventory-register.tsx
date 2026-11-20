@@ -13,6 +13,7 @@ type StockReceipt = {
  id:number; product_name:string; product_code?:string|null; measuring_unit?:string|null; quantity:number; unit_cost:number;
  purchase_date:string; location?:string|null; categorie:"material"|"consumabil"; invoice_number?:string|null; invoice_series?:string|null; supplier_name?:string|null;
 };
+type StockProduct = {id:number;denumire:string;cod?:string|null;stoc:number;stoc_minim:number;activ:boolean};
 type Props = { sourceInvoice:any; onSourceConsumed:()=>void };
 const today=()=>new Date().toISOString().slice(0,10);
 const money=(n:number)=>new Intl.NumberFormat("ro-RO",{style:"currency",currency:"RON"}).format(n||0);
@@ -22,6 +23,7 @@ const csvCell=(v:any)=>'"'+cleanCsv(v).replace(/"/g,'""')+'"';
 export default function InventoryRegister({sourceInvoice,onSourceConsumed}:Props){
  const [objects,setObjects]=useState<ObjectItem[]>([]);
  const [stockReceipts,setStockReceipts]=useState<StockReceipt[]>([]);
+ const [stockProducts,setStockProducts]=useState<StockProduct[]>([]);
  const [loading,setLoading]=useState(false),[saving,setSaving]=useState(false),[error,setError]=useState(""),[notice,setNotice]=useState("");
  const [year,setYear]=useState(String(new Date().getFullYear()));
  const [recordType,setRecordType]=useState<"stoc"|"obiect">("stoc"),[category,setCategory]=useState<"material"|"consumabil">("material");
@@ -41,7 +43,7 @@ export default function InventoryRegister({sourceInvoice,onSourceConsumed}:Props
  },[sourceKey]);
  async function load(){
   setLoading(true);setError("");
-  const [{data:objectRows,error:objectError},{data:stockRows,error:stockError}]=await Promise.all([
+  const [{data:objectRows,error:objectError},{data:stockRows,error:stockError},{data:productRows,error:productError}]=await Promise.all([
    supabase.from("obiecte_inventar").select("*").order("purchase_date",{ascending:false}).order("id",{ascending:false}),
    supabase.from("receptii_stoc").select("*").order("purchase_date",{ascending:false}).order("id",{ascending:false})
   ]);
@@ -109,7 +111,7 @@ export default function InventoryRegister({sourceInvoice,onSourceConsumed}:Props
    </form>
   </div>}
   {error&&<p className="error">{error}</p>}{notice&&<p className="muted">{notice}</p>}
-  <div style={{marginTop:18}}><h2>Stoc curent · calculat din recepții</h2><p className="muted">Afișează totalul cantităților recepționate pe produs și gestiune. Ieșirile / consumul din intervenții se vor înregistra într-o etapă separată.</p><div className="scroll"><table className="table"><thead><tr><th>Produs</th><th>Categorie</th><th>Cantitate recepționată</th><th>Valoare intrări</th><th>Gestiune / locație</th></tr></thead><tbody>{stockTotals.map((x,i)=><tr key={i}><td><b>{x.name}</b><div className="muted">{x.code||"—"}</div></td><td>{x.category==="consumabil"?"Consumabil":"Material / piesă"}</td><td>{x.quantity} {x.unit}</td><td>{money(x.value)}</td><td>{x.location||"—"}</td></tr>)}{!stockTotals.length&&<tr><td colSpan={5} className="muted">Nu sunt produse recepționate în aplicație.</td></tr>}</tbody></table></div></div>
+  <div style={{marginTop:18}}><h2>Catalog și stoc curent · aplicația de deranjamente</h2><p className="muted">Recepțiile actualizează direct cantitatea disponibilă în catalogul comun folosit la fișele de intervenție. Ieșirile din fișele nu sunt încă legate automat de acest registru.</p><div className="scroll"><table className="table"><thead><tr><th>Produs</th><th>Cod</th><th>Stoc</th><th>Stoc minim</th></tr></thead><tbody>{stockTotals.map(x=><tr key={x.id}><td><b>{x.denumire}</b></td><td>{x.cod||"—"}</td><td>{x.stoc}</td><td>{x.stoc_minim}</td></tr>)}{!stockTotals.length&&<tr><td colSpan={4} className="muted">Nu sunt produse în catalogul activ.</td></tr>}</tbody></table></div></div><div style={{marginTop:18}}><h2>Recepții din facturi SPV</h2><div className="scroll"><table className="table"><thead><tr><th>Produs</th><th>Factură / furnizor</th><th>Data</th><th>Categorie</th><th>Cantitate</th><th>Preț unitar</th></tr></thead><tbody>{stockReceipts.map(x=><tr key={x.id}><td>{x.product_name}</td><td>{[x.invoice_series,x.invoice_number].filter(Boolean).join(" ")||"—"}<div className="muted">{x.supplier_name||"Furnizor"}</div></td><td>{x.purchase_date}</td><td>{x.categorie==="consumabil"?"Consumabil":"Material / piesă"}</td><td>{x.quantity} {x.measuring_unit||""}</td><td>{money(Number(x.unit_cost))}</td></tr>)}{!stockReceipts.length&&<tr><td colSpan={6} className="muted">Nu există recepții înregistrate.</td></tr>}</tbody></table></div></div>
   <div style={{marginTop:18}}><h2>Obiecte de inventar · {year}</h2><p className="muted">Afișează intrările cumpărate până la 31 decembrie și neieșite din evidență până la acea dată. Verifică fizic cantitățile la inventariere.</p><div className="scroll"><table className="table"><thead><tr><th>Obiect</th><th>Factură / furnizor</th><th>Achiziție</th><th>Cant.</th><th>Cost unitar</th><th>Nr. inventar / serie</th><th>Stare</th><th>Responsabil / locație</th><th></th></tr></thead><tbody>
    {yearObjects.map(x=><tr key={x.id}><td><b>{x.product_name}</b><div className="muted">{x.product_code||"—"}</div></td><td>{[x.invoice_series,x.invoice_number].filter(Boolean).join(" ")||"—"}<div className="muted">{x.supplier_name||"Furnizor"}</div></td><td>{x.purchase_date}</td><td>{x.quantity} {x.measuring_unit||""}</td><td>{money(Number(x.unit_cost))}</td><td>{x.inventory_number||"—"}<div className="muted">{x.serial_number||""}</div></td><td>{statusLabel(x.status)}{x.date_put_into_use&&<div className="muted">din {x.date_put_into_use}</div>}</td><td>{x.assigned_to||"—"}<div className="muted">{x.location||""}</div></td><td><button className="btn secondary" onClick={()=>beginEdit(x)}>Modifică stare</button></td></tr>)}
    {!yearObjects.length&&<tr><td colSpan={9} className="muted">Nu există obiecte în evidență pentru acest an.</td></tr>}
