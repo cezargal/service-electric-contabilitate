@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
-import { OWNER_USER_ID } from "@/lib/owner-auth";
+import { authorizeOwner } from "@/lib/owner-auth";
 
 
 function decodeXml(value: string): string {
@@ -95,13 +95,12 @@ async function getAuthorizedClient(request: NextRequest) {
   const header = request.headers.get("authorization") || "";
   const access = header.startsWith("Bearer ") ? header.slice(7) : "";
   if (!url || !key || !secret || !access) throw new Error("Autentificare necesară.");
+  const authorization = await authorizeOwner(request);
+  if (!authorization.ok) throw Object.assign(new Error(authorization.error), { status: authorization.status });
   const client = createClient(url, key, {
     global: { headers: { Authorization: `Bearer ${access}` } },
     auth: { persistSession: false, autoRefreshToken: false },
   });
-  const { data, error } = await client.auth.getUser(access);
-  if (error || !data.user) throw new Error("Sesiunea aplicației a expirat. Autentifică-te din nou.");
-  if (data.user.id !== OWNER_USER_ID) throw Object.assign(new Error("Acces neautorizat."), { status: 403 });
   return { client, secret };
 }
 
