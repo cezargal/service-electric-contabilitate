@@ -17,7 +17,7 @@ type StockProduct = {id:number;denumire:string;cod?:string|null;stoc:number;stoc
 type Props = { sourceInvoice:any; onSourceConsumed:()=>void };
 const today=()=>new Date().toISOString().slice(0,10);
 const money=(n:number)=>new Intl.NumberFormat("ro-RO",{style:"currency",currency:"RON"}).format(n||0);
-const amount=(value:any)=>{const n=Number(String(value??"0").replace(/\\s/g,"").replace(",", "."));return Number.isFinite(n)?n:0};
+const amount=(value:any)=>{const n=Number(String(value??"0").trim().replace(",", "."));return Number.isFinite(n)?n:0};
 function grossUnitCost(line:any){const qty=amount(line?.quantity);const netLine=amount(line?.line_total??line?.lineTotal);const tax=amount(line?.tax_amount??line?.taxAmount);if(qty>0&&netLine>0)return Math.round(((netLine+tax)/qty)*100)/100;const unit=amount(line?.unit_price??line?.unitPrice);const percent=amount(line?.tax_percent??line?.taxPercent);return Math.round((unit*(1+percent/100))*100)/100;}
 const cleanCsv=(v:any)=>{const s=String(v??"");return /^[=+@\-]/.test(s)?"'"+s:s};
 const csvCell=(v:any)=>'"'+cleanCsv(v).replace(/"/g,'""')+'"';
