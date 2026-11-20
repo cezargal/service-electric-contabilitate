@@ -14,7 +14,6 @@ type StockReceipt = {
  purchase_date:string; location?:string|null; categorie:"material"|"consumabil"; invoice_number?:string|null; invoice_series?:string|null; supplier_name?:string|null;
 };
 type StockProduct = {id:number;denumire:string;cod?:string|null;stoc:number;stoc_minim:number;activ:boolean};
-type StockProduct = {id:number;denumire:string;cod?:string|null;stoc:number;stoc_minim:number;activ:boolean};
 type Props = { sourceInvoice:any; onSourceConsumed:()=>void };
 const today=()=>new Date().toISOString().slice(0,10);
 const money=(n:number)=>new Intl.NumberFormat("ro-RO",{style:"currency",currency:"RON"}).format(n||0);
@@ -24,7 +23,6 @@ const csvCell=(v:any)=>'"'+cleanCsv(v).replace(/"/g,'""')+'"';
 export default function InventoryRegister({sourceInvoice,onSourceConsumed}:Props){
  const [objects,setObjects]=useState<ObjectItem[]>([]);
  const [stockReceipts,setStockReceipts]=useState<StockReceipt[]>([]);
- const [stockProducts,setStockProducts]=useState<StockProduct[]>([]);
  const [stockProducts,setStockProducts]=useState<StockProduct[]>([]);
  const [loading,setLoading]=useState(false),[saving,setSaving]=useState(false),[error,setError]=useState(""),[notice,setNotice]=useState("");
  const [year,setYear]=useState(String(new Date().getFullYear()));
