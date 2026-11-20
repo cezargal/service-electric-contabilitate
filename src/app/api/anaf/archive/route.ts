@@ -54,14 +54,16 @@ function invoiceMetadata(xml: string) {
     const line = match[1], item = readBlock(line, "Item"), price = readBlock(line, "Price");
     const quantityMatch = line.match(/<(?:[\w.-]+:)?InvoicedQuantity\b([^>]*)>([\s\S]*?)<\/(?:[a-zA-Z0-9_.-]+:)?InvoicedQuantity\s*>/i);
     const tax = readBlock(line, "TaxTotal");
+    const taxSubtotal = readBlock(tax, "TaxSubtotal");
+    const taxCategory = readBlock(taxSubtotal, "TaxCategory") || readBlock(line, "TaxCategory") || readBlock(item, "ClassifiedTaxCategory");
     return {
       description: readTag(item, "Name") || readTag(item, "Description") || readTag(line, "Description") || "Articol",
       quantity: quantityMatch ? decodeXml(quantityMatch[2]) : "",
       unit: quantityMatch ? readAttr(quantityMatch[0], "InvoicedQuantity", "unitCode") : "",
       unit_price: readTag(price, "PriceAmount") || readTag(line, "PriceAmount"),
       line_total: readTag(line, "LineExtensionAmount"),
-      tax_amount: readTag(tax, "TaxAmount"),
-      tax_percent: readTag(readBlock(tax, "TaxSubtotal"), "Percent"),
+      tax_amount: readTag(tax, "TaxAmount") || readTag(taxSubtotal, "TaxAmount"),
+      tax_percent: readTag(taxCategory, "Percent") || readTag(tax, "Percent"),
     };
   });
   const currency = readTag(xml, "DocumentCurrencyCode") || "RON";
