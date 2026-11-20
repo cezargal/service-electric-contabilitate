@@ -14,6 +14,7 @@ type StockReceipt = {
  purchase_date:string; location?:string|null; categorie:"material"|"consumabil"; invoice_number?:string|null; invoice_series?:string|null; supplier_name?:string|null;
 };
 type StockProduct = {id:number;denumire:string;cod?:string|null;stoc:number;stoc_minim:number;activ:boolean};
+type StockProduct = {id:number;denumire:string;cod?:string|null;stoc:number;stoc_minim:number;activ:boolean};
 type Props = { sourceInvoice:any; onSourceConsumed:()=>void };
 const today=()=>new Date().toISOString().slice(0,10);
 const money=(n:number)=>new Intl.NumberFormat("ro-RO",{style:"currency",currency:"RON"}).format(n||0);
@@ -23,6 +24,7 @@ const csvCell=(v:any)=>'"'+cleanCsv(v).replace(/"/g,'""')+'"';
 export default function InventoryRegister({sourceInvoice,onSourceConsumed}:Props){
  const [objects,setObjects]=useState<ObjectItem[]>([]);
  const [stockReceipts,setStockReceipts]=useState<StockReceipt[]>([]);
+ const [stockProducts,setStockProducts]=useState<StockProduct[]>([]);
  const [stockProducts,setStockProducts]=useState<StockProduct[]>([]);
  const [loading,setLoading]=useState(false),[saving,setSaving]=useState(false),[error,setError]=useState(""),[notice,setNotice]=useState("");
  const [year,setYear]=useState(String(new Date().getFullYear()));
@@ -45,19 +47,16 @@ export default function InventoryRegister({sourceInvoice,onSourceConsumed}:Props
   setLoading(true);setError("");
   const [{data:objectRows,error:objectError},{data:stockRows,error:stockError},{data:productRows,error:productError}]=await Promise.all([
    supabase.from("obiecte_inventar").select("*").order("purchase_date",{ascending:false}).order("id",{ascending:false}),
-   supabase.from("receptii_stoc").select("*").order("purchase_date",{ascending:false}).order("id",{ascending:false})
+   supabase.from("receptii_stoc").select("*").order("purchase_date",{ascending:false}).order("id",{ascending:false}),
+   supabase.from("produse_catalog").select("id,denumire,cod,stoc,stoc_minim,activ").eq("activ",true).order("denumire")
   ]);
-  if(objectError||stockError)setError((objectError||stockError)?.message||"Nu s-au putut încărca evidențele.");
-  else{setObjects(objectRows||[]);setStockReceipts(stockRows||[])}
+  if(objectError||stockError||productError)setError((objectError||stockError||productError)?.message||"Nu s-au putut încărca evidențele.");
+  else{setObjects(objectRows||[]);setStockReceipts(stockRows||[]);setStockProducts(productRows||[])}
   setLoading(false);
  }
  const chosenLine=lines[Number(lineIndex)]||null;
  const yearObjects=useMemo(()=>{const end=String(year)+"-12-31";return objects.filter(x=>x.purchase_date<=end&&(!x.date_retired||x.date_retired>end));},[objects,year]);
- const stockTotals=useMemo(()=>{
-  const map=new Map<string,{name:string;code:string;unit:string;quantity:number;value:number;category:string;location:string}>();
-  for(const x of stockReceipts){const key=[x.product_name.trim().toLocaleLowerCase("ro"),x.measuring_unit||"",x.location||""].join("|");const r=map.get(key)||{name:x.product_name,code:x.product_code||"",unit:x.measuring_unit||"",quantity:0,value:0,category:x.categorie,location:x.location||""};r.quantity+=Number(x.quantity||0);r.value+=Number(x.quantity||0)*Number(x.unit_cost||0);map.set(key,r)}
-  return [...map.values()].sort((a,b)=>a.name.localeCompare(b.name,"ro"));
- },[stockReceipts]);
+ const stockTotals=stockProducts;
  async function addFromInvoice(event:any){
   event.preventDefault();setError("");setNotice("");
   if(!sourceInvoice||!chosenLine){setError("Alege o poziție de pe factura SPV.");return}
@@ -73,10 +72,10 @@ export default function InventoryRegister({sourceInvoice,onSourceConsumed}:Props
     if(error)throw error;
     setNotice("Obiectul a fost adăugat în evidența obiectelor de inventar.");
    }else{
-    const {error}=await supabase.from("receptii_stoc").insert({...common,categorie:category,location:location.trim()||null,notes:notes.trim()||null});
-    if(error?.code==="23505")throw new Error("Această poziție din factură a fost deja recepționată în aplicație.");
+    const {error}=await supabase.rpc("app_register_supplier_stock_receipt",{p_anaf_cif:String(doc.cif||"43594993"),p_anaf_message_id:sourceKey,p_line_index:Number(lineIndex),p_invoice_series:common.invoice_series,p_invoice_number:common.invoice_number,p_invoice_date:common.invoice_date,p_supplier_name:common.supplier_name,p_supplier_cif:common.supplier_cif,p_product_name:common.product_name,p_product_code:common.product_code,p_measuring_unit:common.measuring_unit,p_category:category,p_quantity:qty,p_unit_cost:cost,p_purchase_date:common.purchase_date,p_location:location.trim()||null,p_notes:notes.trim()||null});
+    if(error?.message?.includes("recepționată"))throw new Error("Această poziție din factura SPV a fost deja recepționată în aplicație.");
     if(error)throw error;
-    setNotice("Poziția a fost recepționată în stocul aplicației.");
+    setNotice("Poziția a fost recepționată în catalogul și stocul aplicației de deranjamente.");
    }
    await load();onSourceConsumed();
   }catch(e:any){setError(e.message||"Recepția nu a putut fi salvată.");}
