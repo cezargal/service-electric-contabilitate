@@ -52,3 +52,45 @@ body{background:var(--invoice-bg);color:#172b45}
 .panel{padding:15px;border-radius:15px}
 .table{min-width:720px}
 }
+
+@media screen{
+:root{--invoice-bg:#0b100d;--invoice-panel:#141c17;--invoice-line:#29372e;--invoice-text:#e7efe9;--invoice-muted:#91a096;--invoice-green:#15a45b;--invoice-green-light:#42d486}
+body{background:var(--invoice-bg);color:var(--invoice-text)}
+.panel{background:var(--invoice-panel);border-color:var(--invoice-line);box-shadow:0 10px 28px #0003;color:#dbe5dd}
+.panel h1,.panel h2,.panel h3{color:#edf5ef}
+.muted{color:var(--invoice-muted)}
+.field label{color:#bac8be}
+.field input,.field select,.field textarea,.line input,.line select{background:#101713;border-color:#35443a;color:#e7efe9}
+.field input::placeholder,.field textarea::placeholder{color:#718078}
+.field input:focus,.field select:focus,.field textarea:focus,.line input:focus,.line select:focus{outline:none;border-color:#21b96a;box-shadow:0 0 0 4px #18a45c28}
+.btn{background:linear-gradient(135deg,#078947,#14a85b);color:#fff}
+.btn.secondary{background:#1a261e;color:#dce8df;border:1px solid #34443a}
+.btn.danger{background:#351e1d;color:#ff9c91;border:1px solid #54302d}
+.btn:hover{filter:brightness(1.08);box-shadow:0 5px 14px #0004}
+.table th{background:#19231c;color:#92a198}
+.table td{color:#dae4dd;border-color:#29372e}
+.table tbody tr:hover{background:#19241d}
+.error{background:#341e1c;color:#ffaaa1;border-color:#5d302b}
+.success{background:#132a1d;color:#74d99a;border-color:#28573a}
+.total{color:#48d58a}
+}
+@media screen and (min-width:1000px){
+.shell:has(> header.top){max-width:none;margin:0 0 0 260px;padding:22px 28px}
+.shell:has(> header.top) > header.top{position:sticky;top:0;z-index:30;min-height:64px;margin:0 0 16px;padding:8px 0 12px;background:rgba(11,16,13,.96);backdrop-filter:blur(14px)}
+.shell:has(> header.top) > header.top img{display:none}
+.shell:has(> header.top) > .tabs{position:fixed;inset:0 auto 0 0;z-index:40;width:240px;height:100vh;margin:0;padding:20px 12px;display:flex;flex-direction:column;align-items:stretch;flex-wrap:nowrap;gap:5px;overflow-y:auto;overflow-x:hidden;background:#101713;border:0;border-right:1px solid #25342b;border-radius:0;box-shadow:8px 0 24px #0005}
+.shell:has(> header.top) > .tabs::before{content:"";display:block;flex:0 0 66px;width:100%;margin:0 0 14px;background:url('/service-electric-logo.svg') left center/contain no-repeat;border-bottom:1px solid #25342b}
+.shell:has(> header.top) > .tabs .tab{width:100%;text-align:left;white-space:normal;border:1px solid transparent;border-radius:10px;padding:11px 12px;background:transparent;color:#c8d4cc}
+.shell:has(> header.top) > .tabs .tab:hover{background:#18271e;color:#6dde9b}
+.shell:has(> header.top) > .tabs .tab.active{background:#123322;color:#54d58c;box-shadow:none;border-color:#19482c}
+}
+@media screen and (max-width:999px){
+.shell{padding:12px}
+.top{top:0;min-height:64px;padding:8px 0 10px;background:rgba(11,16,13,.96)}
+.tabs{top:64px;display:flex;flex-wrap:nowrap;gap:6px;margin:0 -2px 15px;padding:6px;background:#111914;border-color:#29372e;border-radius:13px;overflow-x:auto}
+.tab{flex:0 0 auto;background:transparent;border:1px solid transparent;border-radius:9px;padding:9px 11px;color:#c6d2ca;font-size:13px;white-space:nowrap}
+.tab:hover{background:#18271e;color:#6dde9b}
+.tab.active{background:#123322;color:#54d58c;box-shadow:none}
+.panel{padding:15px;border-radius:15px}
+.table{min-width:720px}
+}
